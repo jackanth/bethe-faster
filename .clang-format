@@ -1,0 +1,17 @@
+﻿# Pandora style
+---
+BasedOnStyle: LLVM
+BreakBeforeBraces: Allman
+ColumnLimit: 140
+PenaltyExcessCharacter: 1
+IndentWidth: 4
+AccessModifierOffset: -4
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+BreakConstructorInitializers: AfterColon
+AllowShortFunctionsOnASingleLine: false
+IndentCaseLabels: true
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlwaysBreakTemplateDeclarations: true
+...

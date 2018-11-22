@@ -37,8 +37,17 @@ endif()
 #------------------------------------------------------------------------------
 # Build products
 
+find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
+include_directories(${ROOT_INCLUDE_DIRS})
+link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
+add_definitions(${ROOT_DEFINITIONS})
+include(${ROOT_USE_FILE})
+
+find_package(GSL REQUIRED)
+link_libraries(GSL::gsl GSL::gslcblas)
+
 # - build the sources into an object library
-set(BETHE_SRCS src/bethe.cc)
+set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleHelper.cc src/ParticleFilter.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})
