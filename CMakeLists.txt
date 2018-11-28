@@ -8,22 +8,70 @@ cmake_policy(VERSION 3.5.1)
 project(bethe-faster LANGUAGES CXX)
 
 # - build type
-set(CMAKE_BUILD_TYPE Debug CACHE STRING "Set build type")
-set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
+set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Set build type")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 
 option(BUILD_TESTS "Whether to build tests" OFF)
+option(USE_ROOT "Whether to use root for tests" OFF)
+
 #------------------------------------------------------------------------------
 # Compiler flags
 
-# - set C++11 flag
-if (NOT CMAKE_CXX_FLAGS)
-    set(CMAKE_CXX_FLAGS "-std=c++11")
-endif()
+# - set C++14 flag
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if("${CMAKE_BUILD_TYPE} " STREQUAL "Debug ")
-    set(CMAKE_CXX_FLAGS "-O0 -ggdb ${CMAKE_CXX_FLAGS}")
+    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang ")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O0 -ggdb ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O0 -ggdb ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O0 -ggdb -rdynamic ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Intel ")
+        message(FATAL_ERROR "Unsupported compiler: Intel")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "MSVC ")
+        message(FATAL_ERROR "Unsupported compiler: MSVC ")
+    endif()
+
 elseif("${CMAKE_BUILD_TYPE} " STREQUAL "Release ")
-    set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
+    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O3 ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel ")
+        message(FATAL_ERROR "Unsupported compiler: Intel")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "MSVC ")
+        message(FATAL_ERROR "Unsupported compiler: MSVC")
+    endif()
+
+elseif("${CMAKE_BUILD_TYPE} " STREQUAL "RelWithDebInfo ")
+    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 -ggdb ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
+        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 -ggdb ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
+        set(CMAKE_CXX_FLAGS " -pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O3 -ggdb -rdynamic ${CMAKE_CXX_FLAGS}")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel ")
+        message(FATAL_ERROR "Unsupported compiler: Intel")
+
+    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "MSVC ")
+        message(FATAL_ERROR "Unsupported compiler: MSVC")
+    endif()
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -37,17 +85,26 @@ endif()
 #------------------------------------------------------------------------------
 # Build products
 
-find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
-include_directories(${ROOT_INCLUDE_DIRS})
-link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
-add_definitions(${ROOT_DEFINITIONS})
-include(${ROOT_USE_FILE})
+if (BUILD_TESTS AND USE_ROOT)
+    find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
+    include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
+    link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
+    add_definitions(${ROOT_DEFINITIONS} -DUSE_ROOT)
+    include(${ROOT_USE_FILE})
+endif()
 
 find_package(GSL REQUIRED)
 link_libraries(GSL::gsl GSL::gslcblas)
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
 # - build the sources into an object library
-set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleHelper.cc src/ParticleFilter.cc)
+set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleHelper.cc src/ParticleFilter.cc src/FilterHelper.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})

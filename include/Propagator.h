@@ -12,11 +12,13 @@
 #include "Particle.h"
 #include "ParticleHelper.h"
 
+#include "TRandom.h"
 #include "gsl/gsl_rng.h"
 
+#include <iostream>
+#include <map>
 #include <memory>
 #include <set>
-#include <iostream>
 
 namespace bf
 {
@@ -48,55 +50,38 @@ public:
      *  @brief  Propagate a particle
      *
      *  @param  spParticle shared pointer to the particle
-     *  @param  deltaX the distance to propagate
+     *  @param  deltaX the effective thickness
      *
-     *  @return the dQ/dx response of the detector
+     *  @return the dE/dx value
      */
-    float Propagate(const std::shared_ptr<Particle> &spParticle, const float deltaX) const;
+    double Propagate(const std::shared_ptr<Particle> &spParticle, const double deltaX) const;
 
     /**
-     *  @brief  Propagate a set of particle until they have all stopped
+     *  @brief  Propagate a set of particles until they have all stopped
      *
-     *  @param  deltaX the distance to propagate each iteration
+     *  @param  deltaX the effective thickness
      *  @param  particleSet the set of particles
      */
-    void PropagateUntilStopped(const float deltaX, const ParticleHelper::ParticleSet &particleSet) const;
+    void PropagateUntilStopped(const double deltaX, const ParticleHelper::ParticleSet &particleSet) const;
 
     /**
      *  @brief  Propagate a particle until it stops
      *
-     *  @param  deltaX the distance to propagate each iteration
+     *  @param  deltaX the effective thickness
      *  @param  spParticle shared pointer to the particle
      */
-    void PropagateUntilStopped(const float deltaX, const std::shared_ptr<Particle> &spParticle) const;
-
-    /**
-     *  @brief  Calculate the detector dQ/dx value
-     *
-     *  @param  dEdx the dE/dx value
-     *
-     *  @return the dQ/dx value
-     */
-    float CalculateResponse(const float dEdx) const;
-
-    /**
-     *  @brief  Invert the detector response to get dE/dx
-     *
-     *  @param  dQdx the dQ/dx value
-     *
-     *  @return the dE/dx value
-     */
-    float InvertResponse(const float dQdx) const;
+    void PropagateUntilStopped(const double deltaX, const std::shared_ptr<Particle> &spParticle) const;
 
     /**
      *  @brief  Calculate Vavilov's kappa
      *
      *  @param  mass the particle mass
      *  @param  energy the particle energy
+     *  @param  deltaX the effective thickness
      *
      *  @return the kappa value
      */
-    float CalculateKappa(const float mass, const float energy) const;
+    double CalculateKappa(const double mass, const double energy, const double deltaX) const;
 
 protected:
     /**
@@ -104,11 +89,11 @@ protected:
      *
      *  @param  spParticle shared pointer to the particle
      *  @param  observeddEdx the observed dE/dx value
-     *  @param  deltaX the position increment
-     * 
+     *  @param  observeddx the observed effective thickness
+     *
      *  @return the observation probability
      */
-    float CalculateObservationProbability(const std::shared_ptr<Particle> &spParticle, const float observeddEdx, const float deltaX) const;
+    double CalculateObservationProbability(const std::shared_ptr<Particle> &spParticle, const double observeddEdx, const double observeddx) const;
 
     /**
      *  @brief  Calculate the probability of an energy transition
@@ -116,29 +101,53 @@ protected:
      *  @param  deltaE the change in energy
      *  @param  mass the mass
      *  @param  previousEnergy the previous energy
-     * 
+     *  @param  deltaX the effective thickness
+     *
      *  @return the transition probability
      */
-    float CalculateTransitionProbability(const float deltaE, const float mass, const float previousEnergy) const;
+    double CalculateTransitionProbability(const double deltaE, const double mass, const double previousEnergy, const double deltaX) const;
+
+    /**
+     *  @brief  Sample from the Vavilov distribution
+     * 
+     *  @param  kappa the kappa value
+     *  @param  beta2 the beta^2 value
+     *  @param  maxError the maximum error
+     *  @param  maxIterations the maximum number of iterations
+     *
+     *  @return the sample
+     */
+    double SampleFromVavilovDistribution(const double kappa, const double beta2, const double maxError = 0.01, const std::size_t maxIterations = 10000UL) const;
+
+    /**
+     *  @brief  Get the Vavilov probability density
+     *
+     *  @param  kappa the kappa value
+     *  @param  beta2 the beta^2 value
+     *  @param  lambda the lambda value
+     *
+     *  @return the probability density
+     */
+    double GetVavilovProbabilityDensity(const double kappa, const double beta2, const double lambda) const;
 
     friend class ParticleFilter;
 
 private:
-    Detector  m_detector;    ///< The detector parameters
-    float     m_cBar;        ///< The value of cBar
-    float     m_chargeMapC1; ///< The value of the first charge map constant
-    float     m_chargeMapC2; ///< The value of the second charge map constant
-    float     m_xiPartial;   ///< The value of partial xi
-    gsl_rng * m_pGenerator;  ///< Address of the GSL random number generator
+    Detector                       m_detector;               ///< The detector parameters
+    double                         m_cBar;                   ///< The value of cBar
+    double                         m_xiPartial;              ///< The value of partial xi
+    gsl_rng *                      m_pGenerator;             ///< Address of the GSL random number generator
+    TRandom *                      m_pRandom;                ///< Address of a ROOT TRandom object
 
     /**
      *  @brief  Get the xi value
      *
-     *  @param  beta the value of beta
+     *  @param  beta the beta^2 value
+     *  @param  deltaX the effective thickness
      *
      *  @return the value of xi
      */
-    float Xi(const float beta) const;
+    double Xi(const double beta2, const double deltaX) const;
 
     /**
      *  @brief  Get the density correction value
@@ -147,7 +156,7 @@ private:
      *
      *  @return the density correction
      */
-    float DensityCorrection(const float beta) const;
+    double DensityCorrection(const double beta) const;
 
     /**
      *  @brief  Sample from the delta E distribution
@@ -156,22 +165,10 @@ private:
      *  @param  kappa the kappa value
      *  @param  beta2 the beta^2 value
      *  @param  xi the xi value
-     *  @param  maxEnergyTransfer the max energy transfer
      *
      *  @return the sample
      */
-    float SampleDeltaE(const float meanEnergyLoss, const float kappa, const float beta2, const float xi, const float maxEnergyTransfer) const;
-
-    /**
-     *  @brief  Sample from the modified Rutherford cross-section distribution
-     *
-     *  @param  eMin the min energy loss
-     *  @param  eMax the max energy loss
-     *  @param  beta2 the beta^2 value
-     *
-     *  @return the sample
-     */
-    float SampleFromRutherfordDistribution(const float eMin, const float eMax, const float beta2) const;
+    double SampleDeltaE(const double meanEnergyLoss, const double kappa, const double beta2, const double xi) const;
 
     /**
      *  @brief  Get the maximum energy transfer
@@ -181,7 +178,7 @@ private:
      *
      *  @return the maximum energy transfer
      */
-    float GetMaxEnergyTransfer(const float beta, const float mass) const;
+    double GetMaxEnergyTransfer(const double beta, const double mass) const;
 
     /**
      *  @brief  Get the expected energy loss
@@ -189,16 +186,17 @@ private:
      *  @param  beta the beta value
      *  @param  beta2 the beta^2 value
      *  @param  xi the xi value
+     *  @param  maxEnergyLoss the maximum energy loss
      *
      *  @return the expected energy loss
      */
-    float GetExpectedEnergyLoss(const float beta, const float beta2, const float xi) const;
+    double GetExpectedEnergyLoss(const double beta, const double beta2, const double xi, const double maxEnergyLoss) const;
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline void Propagator::PropagateUntilStopped(const float deltaX, const ParticleHelper::ParticleSet &particleSet) const
+inline void Propagator::PropagateUntilStopped(const double deltaX, const ParticleHelper::ParticleSet &particleSet) const
 {
     for (const std::shared_ptr<Particle> &spParticle : particleSet)
         this->PropagateUntilStopped(deltaX, spParticle);
@@ -206,44 +204,28 @@ inline void Propagator::PropagateUntilStopped(const float deltaX, const Particle
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline void Propagator::PropagateUntilStopped(const float deltaX, const std::shared_ptr<Particle> &spParticle) const
+inline void Propagator::PropagateUntilStopped(const double deltaX, const std::shared_ptr<Particle> &spParticle) const
 {
-    while (spParticle->KineticEnergy() > 0.f)
+    while (spParticle->KineticEnergy() > std::numeric_limits<double>::epsilon())
         this->Propagate(spParticle, deltaX);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float Propagator::Xi(const float beta) const
+inline double Propagator::Xi(const double beta2, const double deltaX) const
 {
-    const float beta2 = beta * beta;
-
-    if (beta2 < std::numeric_limits<float>::epsilon())
+    if (beta2 < std::numeric_limits<double>::epsilon())
         throw std::runtime_error("Could not calculate xi because beta^2 was too small");
 
-    return m_xiPartial / beta2;
+    return m_xiPartial * deltaX / beta2;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float Propagator::CalculateResponse(const float dEdx) const
+inline double Propagator::CalculateKappa(const double mass, const double energy, const double deltaX) const
 {
-    return -m_chargeMapC1 * dEdx / (1.f - m_chargeMapC2 * dEdx);
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-inline float Propagator::InvertResponse(const float dQdx) const
-{
-    return std::min(-dQdx / (m_chargeMapC1 - dQdx * m_chargeMapC2), 0.f);
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-inline float Propagator::CalculateKappa(const float mass, const float energy) const
-{
-    const float beta = ParticleHelper::GetParticleBeta(mass, energy);
-    return this->Xi(beta) / this->GetMaxEnergyTransfer(beta, mass); 
+    const double beta = ParticleHelper::GetParticleBeta(mass, energy);
+    return this->Xi(beta * beta, deltaX) / this->GetMaxEnergyTransfer(beta, mass);
 }
 
 } // namespace bf

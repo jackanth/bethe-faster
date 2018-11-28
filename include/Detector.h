@@ -24,44 +24,32 @@ struct Detector
      */
     Detector() noexcept;
 
-    float        m_density;               ///< The density (g/cm^3)
-    float        m_thickness;             ///< The thickness (cm)
-    float        m_avgIonizationEnergy;   ///< The average ionization energy (eV)
+    double       m_density;               ///< The density (g/cm^3)
+    double       m_avgIonizationEnergy;   ///< The average ionization energy (eV)
     unsigned int m_atomicNumber;          ///< The atomic number
-    float        m_atomicMass;            ///< The atomic mass (g/mol)
-    float        m_plasmaEnergy;          ///< The plasma energy (eV)
-    float        m_sternheimerX0;         ///< The Sternheimer x0 parameter
-    float        m_sternheimerX1;         ///< The Sternheimer x1 parameter
-    float        m_sternheimerK;          ///< The Sternheimer k parameter
-    float        m_sternheimerA;          ///< The Sternheimer a parameter
-    float        m_sternheimerDelta0;     ///< The Sternheimer delta0 parameter
-    float        m_birksA;                ///< The Birks A parameter
-    float        m_birksK;                ///< The Birks k parameter (g kV / (MeV cm^3))
-    float        m_electricFieldStrength; ///< The electric field strength (keV/cm)
-    float        m_chargeCalibration;     ///< The charge calibration constant (ADC/e)
-    float        m_ionizationEnergy;      ///< The ionization energy (MeV/electron)
+    double       m_atomicMass;            ///< The atomic mass (g/mol)
+    double       m_plasmaEnergy;          ///< The plasma energy (eV)
+    double       m_sternheimerX0;         ///< The Sternheimer x0 parameter
+    double       m_sternheimerX1;         ///< The Sternheimer x1 parameter
+    double       m_sternheimerK;          ///< The Sternheimer k parameter
+    double       m_sternheimerA;          ///< The Sternheimer a parameter
+    double       m_sternheimerDelta0;     ///< The Sternheimer delta0 parameter
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 inline Detector::Detector() noexcept :
-    m_density(0.f),
-    m_thickness(0.f),
-    m_avgIonizationEnergy(0.f),
+    m_density(0.),
+    m_avgIonizationEnergy(0.),
     m_atomicNumber(0U),
-    m_atomicMass(0.f),
-    m_plasmaEnergy(0.f),
-    m_sternheimerX0(0.f),
-    m_sternheimerX1(0.f),
-    m_sternheimerK(0.f),
-    m_sternheimerA(0.f),
-    m_sternheimerDelta0(0.f),
-    m_birksA(0.f),
-    m_birksK(0.f),
-    m_electricFieldStrength(0.f),
-    m_chargeCalibration(0.f),
-    m_ionizationEnergy(0.f)
+    m_atomicMass(0.),
+    m_plasmaEnergy(0.),
+    m_sternheimerX0(0.),
+    m_sternheimerX1(0.),
+    m_sternheimerK(0.),
+    m_sternheimerA(0.),
+    m_sternheimerDelta0(0.)
 {
 }
 

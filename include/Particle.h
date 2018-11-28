@@ -8,9 +8,8 @@
 #ifndef BF_PARTICLE_H
 #define BF_PARTICLE_H 1
 
-#include <tuple>
-#include <utility>
 #include <vector>
+#include <memory>
 
 namespace bf
 {
@@ -26,6 +25,11 @@ class Propagator;
 class Particle;
 
 /**
+ *  @brief  Forward declaration of the ParticleFilter class
+ */
+class ParticleFilter;
+
+/**
  *  @brief  ParticleState class
  */
 class ParticleState
@@ -36,28 +40,28 @@ public:
      *
      *  @return the position
      */
-    float GetPosition() const noexcept;
+    double GetPosition() const noexcept;
 
     /**
      *  @brief  Get the kinetic energy (MeV)
      *
      *  @return the kinetic energy
      */
-    float GetKineticEnergy() const noexcept;
+    double GetKineticEnergy() const noexcept;
 
     /**
      *  @brief  Get the dx value (cm)
      *
      *  @return the dx value
      */
-    float Getdx() const noexcept;
+    double Getdx() const noexcept;
 
     /**
      *  @brief  Get the dE/dx value (MeV/cm)
      *
      *  @return the dE/dx value
      */
-    float GetdEdx() const noexcept;
+    double GetdEdx() const noexcept;
 
 protected:
     /**
@@ -68,15 +72,15 @@ protected:
      *  @param  dx the delta position (cm)
      *  @param  dEdx the dE/dx value (MeV/cm)
      */
-    ParticleState(const float position, const float kineticEnergy, const float dx, const float dEdx) noexcept;
+    ParticleState(const double position, const double kineticEnergy, const double dx, const double dEdx) noexcept;
 
     friend class Particle;
 
 private:
-    float m_position;      ///< The position (cm)
-    float m_kineticEnergy; ///< The kinetic energy (MeV)
-    float m_dx;            ///< The delta position
-    float m_dEdx;          ///< The dE/dx value (MeV/cm)
+    double m_position;      ///< The position (cm)
+    double m_kineticEnergy; ///< The kinetic energy (MeV)
+    double m_dx;            ///< The delta position
+    double m_dEdx;          ///< The dE/dx value (MeV/cm)
 };
 
 /**
@@ -85,7 +89,7 @@ private:
 class Particle
 {
 public:
-    using History = std::vector<ParticleState>; ///< An alias for the history of particle states
+    using History = std::vector<std::shared_ptr<ParticleState>>; ///< An alias for the history of particle states
 
     /**
      *  @brief  Constructor
@@ -93,43 +97,44 @@ public:
      *  @param  mass the particle mass (MeV)
      *  @param  initialKineticEnergy the initial kinetic energy (MeV)
      *  @param  initialPosition the initial position (cm)
+     *  @param  recordHistory whether to record the particle history
      */
-    Particle(const float mass, const float initialKineticEnergy, const float initialPosition = 0.f);
+    Particle(const double mass, const double initialKineticEnergy, const double initialPosition = 0., const bool recordHistory = true);
 
     /**
      *  @brief  Get the mass (MeV)
      *
      *  @return the mass
      */
-    float Mass() const noexcept;
+    double Mass() const noexcept;
 
     /**
      *  @brief  Get the particle history
      *
      *  @return the particle history
      */
-    const History &GetHistory() const noexcept;
+    const History &GetHistory() const;
 
     /**
      *  @brief  Get the current kinetic energy (MeV)
      *
      *  @return the current kinetic energy
      */
-    float KineticEnergy() const noexcept;
+    double KineticEnergy() const noexcept;
 
     /**
      *  @brief  Get the current position (cm)
      *
      *  @return the current position
      */
-    float Position() const noexcept;
+    double Position() const noexcept;
 
     /**
      *  @brief  Get the last kinetic energy (MeV)
      *
      *  @return the last kinetic energy
      */
-    float LastKineticEnergy() const;
+    double LastKineticEnergy() const;
 
 protected:
     /**
@@ -140,42 +145,51 @@ protected:
      *
      *  @return whether beta is still nonzero
      */
-    bool Increment(const float deltaPosition, const float deltaEnergy);
+    bool Increment(const double deltaPosition, const double deltaEnergy);
+
+    /**
+     *  @brief  Set the kinetic energy
+     *
+     *  @param  kineticEnergy the new kinetic energy
+     */
+    void SetKineticEnergy(const double kineticEnergy) noexcept;
 
     friend class Propagator;
+    friend class ParticleFilter;
 
 private:
-    float   m_mass;          ///< The particle mass (MeV)
-    float   m_kineticEnergy; ///< The kinetic energy (MeV)
-    float   m_position;      ///< The current position (cm)
+    double  m_mass;          ///< The particle mass (MeV)
+    double  m_kineticEnergy; ///< The kinetic energy (MeV)
+    double  m_position;      ///< The current position (cm)
     History m_history;       ///< The particle history
+    bool    m_recordHistory; ///< Whether to record the particle history
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float ParticleState::GetPosition() const noexcept
+inline double ParticleState::GetPosition() const noexcept
 {
     return m_position;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float ParticleState::GetKineticEnergy() const noexcept
+inline double ParticleState::GetKineticEnergy() const noexcept
 {
     return m_kineticEnergy;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float ParticleState::Getdx() const noexcept
+inline double ParticleState::Getdx() const noexcept
 {
     return m_dx;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float ParticleState::GetdEdx() const noexcept
+inline double ParticleState::GetdEdx() const noexcept
 {
     return m_dEdx;
 }
@@ -183,30 +197,40 @@ inline float ParticleState::GetdEdx() const noexcept
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float Particle::Mass() const noexcept
+inline double Particle::Mass() const noexcept
 {
     return m_mass;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline const Particle::History &Particle::GetHistory() const noexcept
+inline const Particle::History &Particle::GetHistory() const
 {
+    if (!m_recordHistory)
+        throw std::runtime_error{"Could not get history for particle because it was not recorded"};
+
     return m_history;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float Particle::KineticEnergy() const noexcept
+inline double Particle::KineticEnergy() const noexcept
 {
     return m_kineticEnergy;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float Particle::Position() const noexcept
+inline double Particle::Position() const noexcept
 {
     return m_position;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline void Particle::SetKineticEnergy(const double kineticEnergy) noexcept
+{
+    m_kineticEnergy = kineticEnergy;
 }
 
 } // namespace bf

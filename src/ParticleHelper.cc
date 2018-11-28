@@ -14,14 +14,14 @@
 namespace bf
 {
 
-std::shared_ptr<Particle> ParticleHelper::GetParticle(const float mass, const float initialKineticEnergy, const float initialPosition)
+std::shared_ptr<Particle> ParticleHelper::GetParticle(const double mass, const double initialKineticEnergy, const double initialPosition)
 {
     return std::shared_ptr<Particle>{new Particle{mass, initialKineticEnergy, initialPosition}};
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-float ParticleHelper::GetParticleBeta(const std::shared_ptr<Particle> &spParticle)
+double ParticleHelper::GetParticleBeta(const std::shared_ptr<Particle> &spParticle)
 {
     return ParticleHelper::GetParticleBeta(spParticle->Mass(), spParticle->KineticEnergy());
 }

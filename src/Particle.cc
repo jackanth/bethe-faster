@@ -11,7 +11,7 @@
 namespace bf
 {
 
-ParticleState::ParticleState(const float position, const float kineticEnergy, const float dx, const float dEdx) noexcept :
+ParticleState::ParticleState(const double position, const double kineticEnergy, const double dx, const double dEdx) noexcept :
     m_position{position},
     m_kineticEnergy{kineticEnergy},
     m_dx{dx},
@@ -22,43 +22,47 @@ ParticleState::ParticleState(const float position, const float kineticEnergy, co
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-Particle::Particle(const float mass, const float initialKineticEnergy, const float initialPosition) :
+Particle::Particle(const double mass, const double initialKineticEnergy, const double initialPosition, const bool recordHistory) :
     m_mass(mass),
     m_kineticEnergy(initialKineticEnergy),
-    m_position(initialPosition)
+    m_position(initialPosition),
+    m_recordHistory(recordHistory)
 {
-    if (m_mass < 0.f)
+    if (m_mass < 0.)
         throw std::runtime_error("Could not initialize particle with negative mass");
 
-    if (m_kineticEnergy < 0.f)
+    if (m_kineticEnergy < 0.)
         throw std::runtime_error("Could not initialize particle with negative energy");
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-float Particle::LastKineticEnergy() const
+double Particle::LastKineticEnergy() const
 {
     if (m_history.empty())
         throw std::runtime_error{"Could not get last kinetic energy for particle because it had no history"};
 
-    return m_history.back().GetKineticEnergy();
+    return m_history.back()->GetKineticEnergy();
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-bool Particle::Increment(const float deltaPosition, const float deltaEnergy)
+bool Particle::Increment(const double deltaPosition, const double deltaEnergy)
 {
-    if (m_kineticEnergy == 0.f)
+    if (m_kineticEnergy == 0.)
         return false;
 
-    const float dEdx = deltaEnergy / deltaPosition;
-    m_history.emplace_back(ParticleState{m_position, m_kineticEnergy, deltaPosition, dEdx}); // add the current state to the history
-
-    const float newKineticEnergy = m_kineticEnergy + deltaEnergy;
-
-    if (newKineticEnergy <= 0.f)
+    if (m_recordHistory)
     {
-        m_kineticEnergy = 0.f;
+        const double dEdx = deltaEnergy / deltaPosition;
+        m_history.emplace_back(std::make_shared<ParticleState>(ParticleState{m_position, m_kineticEnergy, deltaPosition, dEdx})); // add the current state to the history
+    }
+
+    const double newKineticEnergy = m_kineticEnergy + deltaEnergy;
+
+    if (newKineticEnergy <= 0.)
+    {
+        m_kineticEnergy = 0.;
         return false;
     }
 

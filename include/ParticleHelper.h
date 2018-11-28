@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <set>
+#include <cmath>
 
 namespace bf
 {
@@ -44,7 +45,7 @@ public:
      * 
      *  @return shared pointer to the particle
      */
-    static std::shared_ptr<Particle> GetParticle(const float mass, const float initialKineticEnergy, const float initialPosition = 0.f);
+    static std::shared_ptr<Particle> GetParticle(const double mass, const double initialKineticEnergy, const double initialPosition = 0.);
 
     /**
      *  @brief  Get a muon
@@ -54,7 +55,7 @@ public:
      * 
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetMuon(const float initialKineticEnergy, const float initialPosition = 0.f);
+    static std::shared_ptr<Particle> GetMuon(const double initialKineticEnergy, const double initialPosition = 0.);
 
     /**
      *  @brief  Get a proton
@@ -64,7 +65,7 @@ public:
      * 
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetProton(const float initialKineticEnergy, const float initialPosition = 0.f);
+    static std::shared_ptr<Particle> GetProton(const double initialKineticEnergy, const double initialPosition = 0.);
 
     /**
      *  @brief  Get a charged pion
@@ -74,7 +75,7 @@ public:
      * 
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetChargedPion(const float initialKineticEnergy, const float initialPosition = 0.f);
+    static std::shared_ptr<Particle> GetChargedPion(const double initialKineticEnergy, const double initialPosition = 0.);
 
     /**
      *  @brief  Get a charged kaon
@@ -84,7 +85,7 @@ public:
      * 
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetChargedKaon(const float initialKineticEnergy, const float initialPosition = 0.f);
+    static std::shared_ptr<Particle> GetChargedKaon(const double initialKineticEnergy, const double initialPosition = 0.);
 
     /**
      *  @brief  Propagate a particle until it stops
@@ -100,7 +101,7 @@ public:
      * 
      *  @return the particle beta value
      */
-    static float GetParticleBeta(const std::shared_ptr<Particle> &spParticle);
+    static double GetParticleBeta(const std::shared_ptr<Particle> &spParticle);
 
     /**
      *  @brief  Get the beta value for a particle
@@ -110,44 +111,44 @@ public:
      * 
      *  @return the particle beta value
      */
-    static float GetParticleBeta(const float mass, const float energy);
+    static double GetParticleBeta(const double mass, const double energy);
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetMuon(const float initialKineticEnergy, const float initialPosition)
+inline std::shared_ptr<Particle> ParticleHelper::GetMuon(const double initialKineticEnergy, const double initialPosition)
 {
     return ParticleHelper::GetParticle(PhysicalConstants::m_muonMass, initialKineticEnergy, initialPosition);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetProton(const float initialKineticEnergy, const float initialPosition)
+inline std::shared_ptr<Particle> ParticleHelper::GetProton(const double initialKineticEnergy, const double initialPosition)
 {
     return ParticleHelper::GetParticle(PhysicalConstants::m_protonMass, initialKineticEnergy, initialPosition);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetChargedPion(const float initialKineticEnergy, const float initialPosition)
+inline std::shared_ptr<Particle> ParticleHelper::GetChargedPion(const double initialKineticEnergy, const double initialPosition)
 {
     return ParticleHelper::GetParticle(PhysicalConstants::m_chargedPionMass, initialKineticEnergy, initialPosition);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetChargedKaon(const float initialKineticEnergy, const float initialPosition)
+inline std::shared_ptr<Particle> ParticleHelper::GetChargedKaon(const double initialKineticEnergy, const double initialPosition)
 {
     return ParticleHelper::GetParticle(PhysicalConstants::m_chargedKaonMass, initialKineticEnergy, initialPosition);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float ParticleHelper::GetParticleBeta(const float mass, const float energy)
+inline double ParticleHelper::GetParticleBeta(const double mass, const double energy)
 {
-    const float gamma = energy / mass + 1.f;
-    return 1.f - 1.f / (gamma * gamma);
+    const double gamma = energy / mass + 1.;
+    return std::sqrt(1. - 1. / (gamma * gamma));
 }
 
 } // namespace bf
