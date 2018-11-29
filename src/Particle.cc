@@ -8,6 +8,9 @@
 
 #include "Particle.h"
 
+#include <iostream>
+#include <limits>
+
 namespace bf
 {
 
@@ -26,7 +29,8 @@ Particle::Particle(const double mass, const double initialKineticEnergy, const d
     m_mass(mass),
     m_kineticEnergy(initialKineticEnergy),
     m_position(initialPosition),
-    m_recordHistory(recordHistory)
+    m_recordHistory(recordHistory),
+    m_isAlive{true}
 {
     if (m_mass < 0.)
         throw std::runtime_error("Could not initialize particle with negative mass");
@@ -49,21 +53,25 @@ double Particle::LastKineticEnergy() const
 
 bool Particle::Increment(const double deltaPosition, const double deltaEnergy)
 {
-    if (m_kineticEnergy == 0.)
+    if (m_kineticEnergy <= std::numeric_limits<double>::epsilon())
+    {
+        m_isAlive = false;
         return false;
+    }
+
+    const double newKineticEnergy = m_kineticEnergy + deltaEnergy;
+
+    if (newKineticEnergy <= std::numeric_limits<double>::epsilon())
+    {
+        m_kineticEnergy = 0.;
+        m_isAlive = false;
+        return false;
+    }
 
     if (m_recordHistory)
     {
         const double dEdx = deltaEnergy / deltaPosition;
         m_history.emplace_back(std::make_shared<ParticleState>(ParticleState{m_position, m_kineticEnergy, deltaPosition, dEdx})); // add the current state to the history
-    }
-
-    const double newKineticEnergy = m_kineticEnergy + deltaEnergy;
-
-    if (newKineticEnergy <= 0.)
-    {
-        m_kineticEnergy = 0.;
-        return false;
     }
 
     m_kineticEnergy = newKineticEnergy;

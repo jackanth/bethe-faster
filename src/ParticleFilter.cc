@@ -7,9 +7,7 @@
  */
 
 #include "ParticleFilter.h"
-
-#include "gsl/gsl_linalg.h"
-#include "gsl/gsl_randist.h"
+#include "Math/DistFunc.h"
 
 #include <ctime>
 #include <iostream>
@@ -51,17 +49,13 @@ FilterOptions::FilterOptions() noexcept :
 ParticleFilter::ParticleFilter(std::shared_ptr<Propagator> spPropagator, FilterOptions options) :
     m_spPropagator{std::move(spPropagator)},
     m_spDistribution{new ParticleDistribution{}},
-    m_pGenerator{nullptr},
+    m_pRandom{nullptr},
     m_options{std::move(options)},
-    m_pResamplingProbabilityArray{nullptr},
-    m_pResamplingParticleArray{nullptr}
+    m_spResamplingProbabilityVector{new std::vector<double>(m_options.m_nParticles, 0.)},
+    m_spResamplingParticleVector{new std::vector<unsigned int>(m_options.m_nParticles, 0UL)}
 {
     // Set up the random number generator
-    const gsl_rng_type *pType;
-    gsl_rng_env_setup();
-    pType        = gsl_rng_default;
-    m_pGenerator = gsl_rng_alloc(pType);
-    gsl_rng_set(m_pGenerator, static_cast<std::uint32_t>(std::time(nullptr)));
+    m_pRandom = new ROOT::Math::Random<ROOT::Math::GSLRngMT>(static_cast<std::uint32_t>(std::time(nullptr)));
 
     // Check the options
     if (m_options.m_nParticles < 2UL)
@@ -75,23 +69,14 @@ ParticleFilter::ParticleFilter(std::shared_ptr<Propagator> spPropagator, FilterO
 
     if (m_options.m_maxUsedObservations == 0UL)
         throw std::runtime_error{"Max number of observations to use must be greater than 0"};
-
-    // Prepare the resampling arrays
-    m_pResamplingProbabilityArray = new double[m_options.m_nParticles];
-    m_pResamplingParticleArray    = new unsigned int[m_options.m_nParticles];
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 ParticleFilter::~ParticleFilter()
 {
-    gsl_rng_free(m_pGenerator);
-
-    if (m_pResamplingProbabilityArray)
-        delete[] m_pResamplingProbabilityArray;
-
-    if (m_pResamplingParticleArray)
-        delete[] m_pResamplingParticleArray;
+    if (m_pRandom)
+        delete m_pRandom;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -118,9 +103,20 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(
     double currentPosition = observations.front().GetPosition() - m_options.m_stepSize;
     this->CheckOptions(spMassHypothesis);
     this->CreateDistribution(spMassHypothesis, currentPosition);
-    
-    const std::size_t maxObservations = std::min(observations.size(), m_options.m_maxUsedObservations);
-    const double      sampleRate      = static_cast<double>(observations.size()) / static_cast<double>(maxObservations);
+
+    ObservedStateVector selectedObservations;
+    //const double maxPosition = observations.back().GetPosition();
+
+    for (const ObservedParticleState &observation : observations)
+    {
+        //if (observation.GetPosition() < maxPosition - 25.)
+        //    continue;
+
+        selectedObservations.push_back(observation);
+    }
+
+    const std::size_t maxObservations = std::min(selectedObservations.size(), m_options.m_maxUsedObservations);
+    const double      sampleRate      = static_cast<double>(selectedObservations.size()) / static_cast<double>(maxObservations);
 
     // Filter on the distribution
     DistributionHistory history;
@@ -129,7 +125,7 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(
     for (std::size_t i = 0UL; i < maxObservations; ++i)
     {
         const std::size_t            index       = static_cast<std::size_t>(std::round(sampleRate * static_cast<double>(i)));
-        const ObservedParticleState &observation = observations.at(index);
+        const ObservedParticleState &observation = selectedObservations.at(index);
 
         // Ensure observations are in order and there are no repeated positions
         const double observedPosition = observation.GetPosition();
@@ -248,7 +244,7 @@ void ParticleFilter::PropagateParticles(const std::size_t nSteps) const
 
         try
         {
-            for (std::size_t i = 0UL; i < nSteps && spParticle->KineticEnergy() > 0.; ++i)
+            for (std::size_t i = 0UL; i < nSteps && spParticle->IsAlive(); ++i)
                 m_spPropagator->Propagate(spParticle, m_options.m_stepSize);
         }
 
@@ -265,27 +261,23 @@ void ParticleFilter::PropagateParticles(const std::size_t nSteps) const
 
 void ParticleFilter::ResampleDistribution() const
 {
-    // Set up probability and particle count arrays
+    // Set up probability vector
     for (std::size_t i = 0UL; i < m_options.m_nParticles; ++i)
-    {
-        const auto &weightParticlePair = m_spDistribution->at(i);
-        m_pResamplingProbabilityArray[i] = weightParticlePair.first;
-        m_pResamplingParticleArray[i]    = 0UL;
-    }
+        m_spResamplingProbabilityVector->at(i) = m_spDistribution->at(i).first;
 
     // Sample from multinomial distribution and repopulate distribution with samples
-    gsl_ran_multinomial(m_pGenerator, m_options.m_nParticles, static_cast<unsigned int>(m_options.m_nParticles), m_pResamplingProbabilityArray, m_pResamplingParticleArray);
+    *m_spResamplingParticleVector = m_pRandom->Multinomial(static_cast<unsigned int>(m_options.m_nParticles), *m_spResamplingProbabilityVector);
     auto spNewDistribution = std::shared_ptr<ParticleDistribution>{new ParticleDistribution()};
 
     for (std::size_t i = 0UL; i < m_options.m_nParticles; ++i)
     {
-        if (m_pResamplingParticleArray[i] == 0UL)
+        if (m_spResamplingParticleVector->at(i) == 0UL)
             continue;
 
         const std::shared_ptr<Particle> &spParticle = m_spDistribution->at(i).second;
         spNewDistribution->emplace_back(1., spParticle); // we can reuse the original particle once
 
-        for (std::size_t j = 1UL; j < m_pResamplingParticleArray[i]; ++j)
+        for (std::size_t j = 1UL; j < m_spResamplingParticleVector->at(i); ++j)
         {
             const auto spNewParticle = std::shared_ptr<Particle>{new Particle{*spParticle}}; // a deep copy
             spNewDistribution->emplace_back(1., spNewParticle);
@@ -299,12 +291,23 @@ void ParticleFilter::ResampleDistribution() const
 
 double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &distributionHistory)
 {
+    if (distributionHistory.empty())
+        throw std::runtime_error{"Distribution history may not be empty"};
+
     double marginalLogLikelihood = 0.;
+
+    const double maxPosition = distributionHistory.back()->front().second->Position();
 
     for (const std::shared_ptr<ParticleDistribution> &spDistribution : distributionHistory)
     {
         if (spDistribution->empty())
-            throw std::runtime_error{"Distribution cannot be empty"};
+            throw std::runtime_error{"Distribution may not be empty"};
+
+        if (spDistribution->front().second->Position() < maxPosition - 25.)
+            continue;
+
+        // if (spDistribution->front().second->Position() > maxPosition - 5.)
+        //     continue;
 
         double avgWeight = 0.;
 
@@ -314,14 +317,17 @@ double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &di
         avgWeight /= static_cast<double>(spDistribution->size());
 
         if (avgWeight < std::numeric_limits<double>::epsilon())
-        {
-            marginalLogLikelihood = std::numeric_limits<double>::lowest();
-            break;
-        }
+            return std::numeric_limits<double>::lowest();
 
         marginalLogLikelihood += std::log(avgWeight);
     }
 
+    const double finalEnergy = std::get<0UL>(ParticleFilter::CalculateFinalEnergy(distributionHistory));
+
+    if (std::isnan(finalEnergy) || std::isinf(finalEnergy))
+        return std::numeric_limits<double>::lowest();
+
+    marginalLogLikelihood += std::log(ROOT::Math::normal_pdf(finalEnergy, 5.));
     return marginalLogLikelihood;
 }
 

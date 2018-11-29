@@ -149,7 +149,7 @@ std::shared_ptr<bf::Particle> PropagateParticle(const bf::Propagator &propagator
 {
     const auto  spParticle = std::make_shared<bf::Particle>(mass, energy);
 
-    while (spParticle->KineticEnergy() > 0.)
+    while (spParticle->IsAlive())
         propagator.Propagate(spParticle, deltaX);
 
     return spParticle;
@@ -274,9 +274,6 @@ TCanvas * PlotDistributionError(const std::string &name, const std::function<TGr
 {
     TCanvas *pCanvas = new TCanvas(name.c_str(), name.c_str(), 800, 600);
 
-    if (logY)
-        pCanvas->SetLogy();
-
     // Get the response graph
     TGraph *pParticleResponse = graphGetter(propagator, spParticle);
     pParticleResponse->SetMarkerStyle(markerStyle);
@@ -321,6 +318,9 @@ TCanvas * PlotDistributionError(const std::string &name, const std::function<TGr
     p2->SetFillStyle(0); // transparent
 
     p1->SetTicky(0);
+     if (logY)
+        {}//p1->SetLogy();
+
     p2->SetTicky(0);
     p1->Draw();
     p1->cd();
@@ -368,7 +368,7 @@ TCanvas * PlotDistributionError(const std::string &name, const std::function<TGr
 
 void TestGeneration()
 {
-    const double deltaX = 3.;
+    const double deltaX = 0.03;
 
     // Propagate some particles
     const auto propagator = bf::Propagator(bf::DetectorHelper::GetMicroBooNEDetector());
@@ -381,7 +381,7 @@ void TestGeneration()
     propagator.PropagateUntilStopped(deltaX, {spMuon, spProton, spPion, spKaon});
 
 #ifdef USE_ROOT
-    const std::int16_t markerStyle = 6; // 1, 6 are 7 are dots of increasing size
+    const std::int16_t markerStyle = 1; // 1, 6 are 7 are dots of increasing size
 
     // Plot the results
     std::int16_t palette[8];
@@ -405,7 +405,7 @@ void TestGeneration()
 
     TCanvas * pKappaCanvas = PlotForParticles("kappa", PlotParticleKappas, "\\kappa", true, spMuon, spProton, spPion, spKaon, palette, markerStyle, propagator);
 
-    TText *pTextLandau = new TText(11., 4.e-4, "Landau");
+    TText *pTextLandau = new TText(11., 4.e-4, "Truncated Landau");
     pTextLandau->SetTextFont(42);
     pTextLandau->SetTextSize(0.04f);
     pTextLandau->Draw();
@@ -416,21 +416,10 @@ void TestGeneration()
     pLineLandau->SetLineStyle(2);
     pLineLandau->Draw();
 
-    TText *pTextConvolution = new TText(11., 4.e-2, "Convolution");
+    TText *pTextConvolution = new TText(11., 0.5, "Vavilov");
     pTextConvolution->SetTextFont(42);
     pTextConvolution->SetTextSize(0.04f);
     pTextConvolution->Draw();
-
-    TLine *pLineConvolution = new TLine(0., 0.3, pKappaCanvas->GetUxmax(), 0.3);
-    pLineConvolution->SetLineColor(kBlack);
-    pLineConvolution->SetLineWidth(2);
-    pLineConvolution->SetLineStyle(2);
-    pLineConvolution->Draw();
-
-    TText *pTextLognormal = new TText(11., 1.2, "Lognormal");
-    pTextLognormal->SetTextFont(42);
-    pTextLognormal->SetTextSize(0.04f);
-    pTextLognormal->Draw();
 
     TLine *pLineLogNormal = new TLine(0., 10., pKappaCanvas->GetUxmax(), 10.);
     pLineLogNormal->SetLineColor(kBlack);
@@ -438,7 +427,7 @@ void TestGeneration()
     pLineLogNormal->SetLineStyle(2);
     pLineLogNormal->Draw();
 
-    TText *pTextNormal = new TText(11., 50., "Normal");
+    TText *pTextNormal = new TText(11., 20., "Normal");
     pTextNormal->SetTextFont(42);
     pTextNormal->SetTextSize(0.04f);
     pTextNormal->Draw();
@@ -455,41 +444,20 @@ void TestFiltering()
 
     const auto spPropagator = std::make_shared<bf::Propagator>(bf::DetectorHelper::GetMicroBooNEDetector());
 
-    // const double deltaE      = 0.01;
-    // const double deltaU      = 0.01;
-    // const double maxError    = 0.1;
-    // const double deltaLambda = 0.01;
-
-    // std::cout << "Preparing for protons" << std::endl;
-    // spPropagator->StoreInverseVavilovCdfMap(10000., bf::PhysicalConstants::m_protonMass, deltaE, deltaU, maxError);
-    // spPropagator->StoreVavilovPdfMap(10000., bf::PhysicalConstants::m_protonMass, deltaE, deltaLambda);
-
-    // std::cout << "Preparing for pions" << std::endl;
-    // spPropagator->StoreInverseVavilovCdfMap(10000., bf::PhysicalConstants::m_chargedPionMass, deltaE,deltaU, maxError);
-    // spPropagator->StoreVavilovPdfMap(10000., bf::PhysicalConstants::m_chargedPionMass, deltaE, deltaLambda);
-
-    // std::cout << "Preparing for muons" << std::endl;
-    // spPropagator->StoreInverseVavilovCdfMap(10000., bf::PhysicalConstants::m_muonMass, deltaE, deltaU, deltaLambda);
-    // spPropagator->StoreVavilovPdfMap(10000., bf::PhysicalConstants::m_muonMass, deltaE, deltaLambda);
-
-    // std::cout << "Preparing for kaons" << std::endl;
-    // spPropagator->StoreInverseVavilovCdfMap(10000., bf::PhysicalConstants::m_chargedKaonMass, deltaE, deltaU, maxError);
-    // spPropagator->StoreVavilovPdfMap(10000., bf::PhysicalConstants::m_chargedKaonMass, deltaE, deltaLambda);
-
     // Set up the particle filter
     bf::FilterOptions filterOptions;
-    filterOptions.m_stepSize            = 0.3;
+    filterOptions.m_stepSize            = 0.03;
     filterOptions.m_nParticles          = 1000UL;
     filterOptions.m_maxUsedObservations = 10000UL;
     const auto particleFilter = bf::ParticleFilter{spPropagator, filterOptions};
 
-    for (int i = 0; i < 20; ++i)
+    for (int i = 0; i < 100; ++i)
     {
         std::cout << i << std::endl;
         // Propagate a particle
-        const double particleMass   = bf::PhysicalConstants::m_chargedPionMass;
+        const double particleMass   = bf::PhysicalConstants::m_protonMass;
         const double particleEnergy = 500.; // MeV
-        const double deltaX         = 0.3; // cm
+        const double deltaX         = 0.03; // cm
 
         const auto spParticle = bf::ParticleHelper::GetParticle(particleMass, particleEnergy);
         spPropagator->PropagateUntilStopped(deltaX, spParticle);
@@ -497,42 +465,89 @@ void TestFiltering()
         const auto &particleHistory     = spParticle->GetHistory();
         //const std::size_t nObservations = particleHistory.size();
 
-        // Some plotting options
-        // const std::int16_t markerStyle = 6; // 1, 6 are 7 are dots of increasing size
+        //Some plotting options
+        const std::int16_t markerStyle = 6; // 1, 6 are 7 are dots of increasing size
         
-        // std::int16_t palette[8];
-        // palette[0] = static_cast<std::int16_t>(TColor::GetColor("#1B9E77"));
-        // palette[1] = static_cast<std::int16_t>(TColor::GetColor("#D95F02"));
-        // palette[2] = static_cast<std::int16_t>(TColor::GetColor("#7570B3"));
-        // palette[3] = static_cast<std::int16_t>(TColor::GetColor("#E7298A"));
-        // palette[4] = static_cast<std::int16_t>(TColor::GetColor("#66A61E"));
-        // palette[5] = static_cast<std::int16_t>(TColor::GetColor("#E6AB02"));
-        // palette[6] = static_cast<std::int16_t>(TColor::GetColor("#A6761D"));
-        // palette[7] = static_cast<std::int16_t>(TColor::GetColor("#666666"));
+        std::int16_t palette[8];
+        palette[0] = static_cast<std::int16_t>(TColor::GetColor("#1B9E77"));
+        palette[1] = static_cast<std::int16_t>(TColor::GetColor("#D95F02"));
+        palette[2] = static_cast<std::int16_t>(TColor::GetColor("#7570B3"));
+        palette[3] = static_cast<std::int16_t>(TColor::GetColor("#E7298A"));
+        palette[4] = static_cast<std::int16_t>(TColor::GetColor("#66A61E"));
+        palette[5] = static_cast<std::int16_t>(TColor::GetColor("#E6AB02"));
+        palette[6] = static_cast<std::int16_t>(TColor::GetColor("#A6761D"));
+        palette[7] = static_cast<std::int16_t>(TColor::GetColor("#666666"));
 
         // Prepare the hypotheses
-        auto muonPrior = bf::FilterHelper::GetUniformEnergyPrior(filterOptions.m_nParticles, 50., 10000.);
+        auto muonPrior = bf::FilterHelper::GetPerfectlyUniformEnergyPrior(filterOptions.m_nParticles, 50., 10000.);
         const auto spMuonHypothesis = std::shared_ptr<bf::MassHypothesis>{new bf::MassHypothesis{bf::PhysicalConstants::m_muonMass, std::move(muonPrior)}};
 
-        auto pionPrior = bf::FilterHelper::GetUniformEnergyPrior(filterOptions.m_nParticles, 50., 10000.);
+        auto pionPrior = bf::FilterHelper::GetPerfectlyUniformEnergyPrior(filterOptions.m_nParticles, 50., 10000.);
         const auto spPionHypothesis = std::shared_ptr<bf::MassHypothesis>{new bf::MassHypothesis{bf::PhysicalConstants::m_chargedPionMass, std::move(pionPrior)}};
 
-        auto kaonPrior = bf::FilterHelper::GetUniformEnergyPrior(filterOptions.m_nParticles, 50., 10000.);
+        auto kaonPrior = bf::FilterHelper::GetPerfectlyUniformEnergyPrior(filterOptions.m_nParticles, 50., 10000.);
         const auto spKaonHypothesis = std::shared_ptr<bf::MassHypothesis>{new bf::MassHypothesis{bf::PhysicalConstants::m_chargedKaonMass, std::move(kaonPrior)}};
 
-        auto protonPrior = bf::FilterHelper::GetUniformEnergyPrior(filterOptions.m_nParticles, 50., 1000.);
+        auto protonPrior = bf::FilterHelper::GetPerfectlyUniformEnergyPrior(filterOptions.m_nParticles, 50., 1000.);
         const auto spProtonHypothesis = std::shared_ptr<bf::MassHypothesis>{new bf::MassHypothesis{bf::PhysicalConstants::m_protonMass, std::move(protonPrior)}};
 
         // Test the muon hypothesis
         const auto muonDistributionHistory = particleFilter.Filter(particleHistory, spMuonHypothesis);
         const double muonLogLikelihood = bf::ParticleFilter::CalculateMarginalLikelihood(muonDistributionHistory);
 
+        PlotDistributionError("distribution_error_muon", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", true, spParticle, palette[0], markerStyle, *spPropagator, muonDistributionHistory, particleHistory, palette[5]);
+                const auto protonDistributionHistory = particleFilter.Filter(particleHistory, spProtonHypothesis);
+
+
+        auto distributionHistory = protonDistributionHistory;
+        const std::size_t numViews = std::min(20UL, distributionHistory.size());
+        const std::size_t observationFrequency = static_cast<std::size_t>(distributionHistory.size() / numViews);
+        TCanvas *pCanvas = new TCanvas("filter_progress", "filter_progress", 800, 600);
+
+        for (std::size_t j = 0UL; j < numViews; ++j)
+        {
+            TH1F *pHistogram = new TH1F("particle_filter", "particle_filter", 50, 0., 1000.);
+
+            const std::size_t index    = j * observationFrequency;
+            const auto &spDistribution = distributionHistory.at(index);
+            const auto &spState        = particleHistory.at(index);
+
+            double totalWeight = 0.;
+            for (const auto &pair : *spDistribution)
+                totalWeight += pair.first;
+
+            for (const auto &pair : *spDistribution)
+                pHistogram->Fill(pair.second->KineticEnergy(), pair.first / totalWeight);
+
+            pHistogram->GetXaxis()->SetTitle("Kinetic energy (MeV)");
+            pHistogram->GetYaxis()->SetTitle("Probability density");
+
+            pHistogram->Draw("hist");
+            gPad->Update();
+
+            // Add the truth line
+            TLine *pTrueLine = new TLine(spState->GetKineticEnergy(), 0., spState->GetKineticEnergy(), pCanvas->GetUymax());
+            pTrueLine->SetLineColor(kBlack);
+            pTrueLine->SetLineWidth(2);
+            pTrueLine->SetLineStyle(2);
+            pTrueLine->Draw();
+
+            // Add a label
+            TText *pLabel = new TText(30., pCanvas->GetUymax() * 0.9, ("Observation " + std::to_string(index)).c_str());
+            pLabel->SetTextFont(42);
+            pLabel->SetTextSize(0.04f);
+            pLabel->Draw();
+
+            gPad->Update();
+            Pause();
+
+            delete pHistogram;
+        }
+
         double muonMeanFinalEnergy = 0.f, muonStdevFinalEnergy = 0.f;
         std::tie(muonMeanFinalEnergy, muonStdevFinalEnergy) = bf::ParticleFilter::CalculateFinalEnergy(muonDistributionHistory);
 
-        //std::cout << "Muon log-likelihood was " << muonLogLikelihood << ", final T = " << muonMeanFinalEnergy << " +- " << muonStdevFinalEnergy << " MeV"<< std::endl;
-        // PlotDistributionError("distribution_error_muon", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", false, spParticle, palette[0], markerStyle, propagator, muonDistributionHistory, particleHistory, palette[5]);
-        // Pause();
+        
 
         // Test the pion hypothesis
         const auto pionDistributionHistory = particleFilter.Filter(particleHistory, spPionHypothesis);
@@ -541,10 +556,6 @@ void TestFiltering()
         double pionMeanFinalEnergy = 0.f, pionStdevFinalEnergy = 0.f;
         std::tie(pionMeanFinalEnergy, pionStdevFinalEnergy) = bf::ParticleFilter::CalculateFinalEnergy(pionDistributionHistory);
 
-        //std::cout << "Pion log-likelihood was " << pionLogLikelihood << ", final T = " << pionMeanFinalEnergy << " +- " << pionStdevFinalEnergy << " MeV"<< std::endl;
-        // PlotDistributionError("distribution_error_pion", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", false, spParticle, palette[0], markerStyle, propagator, pionDistributionHistory, particleHistory, palette[5]);
-        // Pause();
-
         // Test the kaon hypothesis
         const auto kaonDistributionHistory = particleFilter.Filter(particleHistory, spKaonHypothesis);
         const double kaonLogLikelihood = bf::ParticleFilter::CalculateMarginalLikelihood(kaonDistributionHistory);
@@ -552,20 +563,19 @@ void TestFiltering()
         double kaonMeanFinalEnergy = 0.f, kaonStdevFinalEnergy = 0.f;
         std::tie(kaonMeanFinalEnergy, kaonStdevFinalEnergy) = bf::ParticleFilter::CalculateFinalEnergy(kaonDistributionHistory);
 
-        //std::cout << "Kaon log-likelihood was " << kaonLogLikelihood << ", final T = " << kaonMeanFinalEnergy << " +- " << kaonStdevFinalEnergy << " MeV"<< std::endl;
-        // PlotDistributionError("distribution_error_kaon", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", false, spParticle, palette[0], markerStyle, propagator, kaonDistributionHistory, particleHistory, palette[5]);
-        // Pause();
+        std::cout << "Kaon log-likelihood was " << kaonLogLikelihood << ", final T = " << kaonMeanFinalEnergy << " +- " << kaonStdevFinalEnergy << " MeV"<< std::endl;
+        PlotDistributionError("distribution_error_kaon", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", true, spParticle, palette[0], markerStyle, *spPropagator, kaonDistributionHistory, particleHistory, palette[5]);
+        Pause();
 
         // Test the proton hypothesis
-        const auto protonDistributionHistory = particleFilter.Filter(particleHistory, spProtonHypothesis);
         const double protonLogLikelihood = bf::ParticleFilter::CalculateMarginalLikelihood(protonDistributionHistory);
 
         double protonMeanFinalEnergy = 0.f, protonStdevFinalEnergy = 0.f;
         std::tie(protonMeanFinalEnergy, protonStdevFinalEnergy) = bf::ParticleFilter::CalculateFinalEnergy(protonDistributionHistory);
 
-       // std::cout << "Proton log-likelihood was " << protonLogLikelihood << ", final T = " << protonMeanFinalEnergy << " +- " << protonStdevFinalEnergy << " MeV"<< std::endl;
-        // PlotDistributionError("distribution_error_proton", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", false, spParticle, palette[0], markerStyle, propagator, protonDistributionHistory, particleHistory, palette[5]);
-        // Pause();
+        std::cout << "Proton log-likelihood was " << protonLogLikelihood << ", final T = " << protonMeanFinalEnergy << " +- " << protonStdevFinalEnergy << " MeV"<< std::endl;
+        PlotDistributionError("distribution_error_proton", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", true, spParticle, palette[0], markerStyle, *spPropagator, protonDistributionHistory, particleHistory, palette[5]);
+        Pause();
 
         // if (muonLogLikelihood > protonLogLikelihood && muonLogLikelihood > pionLogLikelihood && muonLogLikelihood > kaonLogLikelihood)
         //     std::cout << "This was a muon" << std::endl;
@@ -573,21 +583,39 @@ void TestFiltering()
         // else if (protonLogLikelihood > muonLogLikelihood && protonLogLikelihood > pionLogLikelihood && protonLogLikelihood > kaonLogLikelihood)
         //     std::cout << "This was a proton" << std::endl;
 
-        if (pionLogLikelihood > muonLogLikelihood && pionLogLikelihood > protonLogLikelihood && pionLogLikelihood > kaonLogLikelihood)
+        if (muonLogLikelihood > pionLogLikelihood && muonLogLikelihood > protonLogLikelihood && muonLogLikelihood > kaonLogLikelihood)
+        {
             ++meCorrect;
+            std::cout << "Me correct" << std::endl;
+        }
 
+        else
+        {
+            std::cout << "Me incorrect" << std::endl;
+        }
         // else
         //     std::cout << "This was a kaon" << std::endl;
 
         const double pida = bf::ParticleFilter::CalculatePida(particleHistory);
 
-        const double pidaPionError = std::abs(pida - 10.5579);
-        const double pidaMuonError = std::abs(pida - 9.66799);
-        const double pidaProtonError = std::abs(pida - 19.2652);
-        const double pidaKaonError = std::abs(pida - 15.7125);
+        const double pidaPionError = std::abs(pida - 8.52747);
+        const double pidaMuonError = std::abs(pida - 7.82418);
+        const double pidaProtonError = std::abs(pida - 17.4296);
+        const double pidaKaonError = std::abs(pida - 13.4559);
 
-        if (pidaPionError < pidaMuonError && pidaPionError < pidaProtonError && pidaPionError < pidaKaonError)
+        if (pidaMuonError < pidaPionError && pidaMuonError < pidaProtonError && pidaMuonError < pidaKaonError)
+        {
             ++pidaCorrect;
+            std::cout << "PIDA correct" << std::endl;
+        }
+
+        else
+            std::cout << "PIDA incorrect" << std::endl;
+
+        
+        std::cout << "Pion log-likelihood was " << pionLogLikelihood << ", final T = " << pionMeanFinalEnergy << " +- " << pionStdevFinalEnergy << " MeV"<< std::endl;
+        PlotDistributionError("distribution_error_pion", PlotParticledEdx, "-\\mathrm{d}Q/\\mathrm{d}x \\text{ (MeV/cm)}", true, spParticle, palette[0], markerStyle, *spPropagator, pionDistributionHistory, particleHistory, palette[5]);
+        Pause();
 
         // else if (pidaMuonError < pidaPionError && pidaMuonError < pidaProtonError && pidaMuonError < pidaKaonError)
         //     std::cout << "PIDA says this was a muon" << std::endl;
@@ -707,10 +735,10 @@ void TestFiltering()
 
         const double pida = bf::ParticleFilter::CalculatePida(particleHistory);
 
-        const double pidaPionError = std::abs(pida - 10.5579);
-        const double pidaMuonError = std::abs(pida - 9.66799);
-        const double pidaProtonError = std::abs(pida - 19.2652);
-        const double pidaKaonError = std::abs(pida - 15.7125);
+        const double pidaPionError = std::abs(pida - 8.52747);
+        const double pidaMuonError = std::abs(pida - 7.82418);
+        const double pidaProtonError = std::abs(pida - 17.4296);
+        const double pidaKaonError = std::abs(pida - 13.4559);
 
         if (pidaPionError < pidaMuonError && pidaPionError < pidaProtonError && pidaPionError < pidaKaonError)
             ++pidaCorrect;
@@ -730,52 +758,13 @@ void TestFiltering()
     std::cout << "Muons pida correct = " << pidaCorrect << std::endl;
     std::cout << "Muons me correct   = " << meCorrect << std::endl;
     std::cout << "Muons total        = " << total << std::endl;
-
-    // const std::size_t numViews = std::min(50UL, distributionHistory.size());
-    // const std::size_t observationFrequency = static_cast<std::size_t>(distributionHistory.size() / numViews);
-    // TCanvas *pCanvas = new TCanvas("filter_progress", "filter_progress", 800, 600);
-
-    // for (std::size_t i = 0UL; i < numViews; ++i)
-    // {
-    //     TH1F *pHistogram = new TH1F("particle_filter", "particle_filter", 50, 0., 1000.);
-
-    //     const std::size_t index    = i * observationFrequency;
-    //     const auto &spDistribution = distributionHistory.at(index);
-    //     const auto &spState        = particleHistory.at(index);
-
-    //     for (const auto &pair : *spDistribution)
-    //         pHistogram->Fill(pair.second->KineticEnergy(), pair.first);
-
-    //     pHistogram->GetXaxis()->SetTitle("Kinetic energy (MeV)");
-    //     pHistogram->GetYaxis()->SetTitle("Probability density");
-
-    //     pHistogram->Draw("hist");
-    //     gPad->Update();
-
-    //     // Add the truth line
-    //     TLine *pTrueLine = new TLine(spState->GetKineticEnergy(), 0., spState->GetKineticEnergy(), pCanvas->GetUymax());
-    //     pTrueLine->SetLineColor(kBlack);
-    //     pTrueLine->SetLineWidth(2);
-    //     pTrueLine->SetLineStyle(2);
-    //     pTrueLine->Draw();
-
-    //     // Add a label
-    //     TText *pLabel = new TText(30., pCanvas->GetUymax() * 0.9, ("Observation " + std::to_string(index)).c_str());
-    //     pLabel->SetTextFont(42);
-    //     pLabel->SetTextSize(0.04f);
-    //     pLabel->Draw();
-
-    //     pCanvas->Update();
-    //     Pause();
-
-    //     delete pHistogram;
 }
 
 int main()
 {  
     Initialize();
-    const bool testGeneration = false;
-    const bool testFiltering = true;
+    const bool testGeneration = true;
+    const bool testFiltering = false;
 
     try
     {

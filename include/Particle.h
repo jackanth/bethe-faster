@@ -136,6 +136,13 @@ public:
      */
     double LastKineticEnergy() const;
 
+    /**
+     *  @brief  Get whether the particle is alive
+     *
+     *  @return whether the particle is alive
+     */
+    bool IsAlive() const noexcept;
+
 protected:
     /**
      *  @brief  Increment the particle
@@ -154,6 +161,11 @@ protected:
      */
     void SetKineticEnergy(const double kineticEnergy) noexcept;
 
+    /**
+     *  @brief  Kill the particle
+     */
+    void Kill() noexcept;
+
     friend class Propagator;
     friend class ParticleFilter;
 
@@ -163,6 +175,7 @@ private:
     double  m_position;      ///< The current position (cm)
     History m_history;       ///< The particle history
     bool    m_recordHistory; ///< Whether to record the particle history
+    bool    m_isAlive;       ///< Whether the particle is alive
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -228,9 +241,24 @@ inline double Particle::Position() const noexcept
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+inline bool Particle::IsAlive() const noexcept
+{
+    return m_isAlive;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 inline void Particle::SetKineticEnergy(const double kineticEnergy) noexcept
 {
     m_kineticEnergy = kineticEnergy;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline void Particle::Kill() noexcept
+{
+    m_isAlive = false;
+    m_kineticEnergy = 0.;
 }
 
 } // namespace bf

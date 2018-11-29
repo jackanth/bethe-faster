@@ -34,7 +34,7 @@ public:
      * 
      *  @return the energy prior
      */
-    static std::vector<double> GetGaussianEnergyPrior(const std::size_t nParticles, const double mean, const double sigma) noexcept;
+    static std::vector<double> GetGaussianEnergyPrior(const std::size_t nParticles, const double mean, const double sigma);
 
     /**
      *  @brief  Get a uniform energy prior in MeV
@@ -45,7 +45,18 @@ public:
      * 
      *  @return the energy prior
      */
-    static std::vector<double> GetUniformEnergyPrior(const std::size_t nParticles, const double min, const double max) noexcept;
+    static std::vector<double> GetUniformEnergyPrior(const std::size_t nParticles, const double min, const double max);
+
+    /**
+     *  @brief  Get an evenly-distributed uniform energy prior in MeV
+     * 
+     *  @param nParticles the number of particles
+     *  @param min the minimum energy (MeV)
+     *  @param max the maximum energy (MeV)
+     * 
+     *  @return the energy prior
+     */
+    static std::vector<double> GetPerfectlyUniformEnergyPrior(const std::size_t nParticles, const double min, const double max);
 };
 
 } // namespace bf

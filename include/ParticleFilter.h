@@ -11,7 +11,8 @@
 #include "Particle.h"
 #include "Propagator.h"
 
-#include "gsl/gsl_rng.h"
+#include "Math/Random.h"
+#include "Math/GSLRndmEngines.h"
 
 #include <memory>
 #include <vector>
@@ -193,10 +194,10 @@ public:
 private:
     std::shared_ptr<Propagator>           m_spPropagator;                ///< The propagator
     std::shared_ptr<ParticleDistribution> m_spDistribution;              ///< The current distribution
-    gsl_rng *                             m_pGenerator;                  ///< Address of the GSL random number generator
+    ROOT::Math::Random<ROOT::Math::GSLRngMT> *                      m_pRandom;                ///< Address of a ROOT TRandom object
     FilterOptions                         m_options;                     ///< The options
-    double *                              m_pResamplingProbabilityArray; ///< The resampling probability array
-    unsigned int *                        m_pResamplingParticleArray;    ///< The resampling particle array
+    std::shared_ptr<std::vector<double>>  m_spResamplingProbabilityVector; ///< The resampling probability vector
+    std::shared_ptr<std::vector<unsigned int>>  m_spResamplingParticleVector;    ///< The resampling particle vector
 
     /**
      *  @brief  Filter on an observation

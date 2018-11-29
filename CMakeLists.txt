@@ -12,7 +12,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Set build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 
 option(BUILD_TESTS "Whether to build tests" OFF)
-option(USE_ROOT "Whether to use root for tests" OFF)
+option(USE_OPENMP "Whether to build with OpenMP support" ON)
 
 #------------------------------------------------------------------------------
 # Compiler flags
@@ -24,13 +24,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if("${CMAKE_BUILD_TYPE} " STREQUAL "Debug ")
     if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang ")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O0 -ggdb ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -Wno-unknown-pragmas -O0 -ggdb")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O0 -ggdb ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -Wno-unknown-pragmas -O0 -ggdb")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O0 -ggdb -rdynamic ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -Wno-unknown-pragmas -O0 -ggdb -rdynamic")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Intel ")
         message(FATAL_ERROR "Unsupported compiler: Intel")
@@ -41,13 +41,13 @@ if("${CMAKE_BUILD_TYPE} " STREQUAL "Debug ")
 
 elseif("${CMAKE_BUILD_TYPE} " STREQUAL "Release ")
     if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-unknown-pragmas -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-unknown-pragmas -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O3 ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-unknown-pragmas -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O3")
 
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel ")
         message(FATAL_ERROR "Unsupported compiler: Intel")
@@ -58,13 +58,13 @@ elseif("${CMAKE_BUILD_TYPE} " STREQUAL "Release ")
 
 elseif("${CMAKE_BUILD_TYPE} " STREQUAL "RelWithDebInfo ")
     if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 -ggdb ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -Wno-unknown-pragmas -O3 -ggdb")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
-        set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3 -ggdb ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -Wno-unknown-pragmas -O3 -ggdb")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
-        set(CMAKE_CXX_FLAGS " -pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O3 -ggdb -rdynamic ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -Wno-unknown-pragmas -O3 -ggdb -rdynamic")
 
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel ")
         message(FATAL_ERROR "Unsupported compiler: Intel")
@@ -85,22 +85,19 @@ endif()
 #------------------------------------------------------------------------------
 # Build products
 
-if (BUILD_TESTS AND USE_ROOT)
-    find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
-    include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
-    link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
-    add_definitions(${ROOT_DEFINITIONS} -DUSE_ROOT)
-    include(${ROOT_USE_FILE})
-endif()
+find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
+include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
+link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
+add_definitions(${ROOT_DEFINITIONS} -DUSE_ROOT)
+include(${ROOT_USE_FILE})
 
-find_package(GSL REQUIRED)
-link_libraries(GSL::gsl GSL::gslcblas)
-
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+if (USE_OPENMP)
+    find_package(OpenMP)
+    if (OPENMP_FOUND)
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    endif()
 endif()
 
 # - build the sources into an object library

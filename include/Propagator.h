@@ -12,8 +12,8 @@
 #include "Particle.h"
 #include "ParticleHelper.h"
 
-#include "TRandom.h"
-#include "gsl/gsl_rng.h"
+#include "Math/Random.h"
+#include "Math/GSLRndmEngines.h"
 
 #include <iostream>
 #include <map>
@@ -136,8 +136,7 @@ private:
     Detector                       m_detector;               ///< The detector parameters
     double                         m_cBar;                   ///< The value of cBar
     double                         m_xiPartial;              ///< The value of partial xi
-    gsl_rng *                      m_pGenerator;             ///< Address of the GSL random number generator
-    TRandom *                      m_pRandom;                ///< Address of a ROOT TRandom object
+    ROOT::Math::Random<ROOT::Math::GSLRngMT> *                      m_pRandom;                ///< Address of a ROOT TRandom object
 
     /**
      *  @brief  Get the xi value
@@ -206,7 +205,7 @@ inline void Propagator::PropagateUntilStopped(const double deltaX, const Particl
 
 inline void Propagator::PropagateUntilStopped(const double deltaX, const std::shared_ptr<Particle> &spParticle) const
 {
-    while (spParticle->KineticEnergy() > std::numeric_limits<double>::epsilon())
+    while (spParticle->IsAlive())
         this->Propagate(spParticle, deltaX);
 }
 

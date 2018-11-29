@@ -9,8 +9,6 @@
 #include "Propagator.h"
 #include "PhysicalConstants.h"
 
-#include "gsl/gsl_randist.h"
-#include "Math/VavilovAccurate.h"
 #include "Math/VavilovFast.h"
 #include "Math/DistFunc.h"
 
@@ -26,7 +24,6 @@ Propagator::Propagator(Detector detector) :
     m_detector(std::move_if_noexcept(detector)),
     m_cBar(0.),
     m_xiPartial(0.),
-    m_pGenerator(nullptr),
     m_pRandom(nullptr)
 {
     if (m_detector.m_plasmaEnergy < std::numeric_limits<double>::epsilon())
@@ -41,21 +38,13 @@ Propagator::Propagator(Detector detector) :
                   m_detector.m_density / (2. * m_detector.m_atomicMass);
 
     // Set up the random number generators
-    const gsl_rng_type * pType;
-    gsl_rng_env_setup();
-    pType = gsl_rng_default;
-    m_pGenerator = gsl_rng_alloc(pType);
-    gsl_rng_set(m_pGenerator, static_cast<std::uint32_t>(std::time(nullptr)));
-
-    m_pRandom = new TRandom(static_cast<std::uint32_t>(std::time(nullptr)));
+    m_pRandom = new ROOT::Math::Random<ROOT::Math::GSLRngMT>(static_cast<std::uint32_t>(std::time(nullptr)));
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 Propagator::~Propagator()
 {
-    gsl_rng_free(m_pGenerator);
-
     if (m_pRandom)
         delete m_pRandom;
 }
@@ -63,25 +52,33 @@ Propagator::~Propagator()
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 double Propagator::Propagate(const std::shared_ptr<Particle> &spParticle, const double deltaX) const
-{   
+{  
+    if (!spParticle->IsAlive())
+        return 0.f;
+
     const double beta  = ParticleHelper::GetParticleBeta(spParticle);
     const double beta2 = beta * beta;
-
-    if (beta < 0.001)
-    {
-        spParticle->Increment(deltaX, -spParticle->KineticEnergy());
-        return 0.f;
-    }
 
     const double xi = this->Xi(beta2, deltaX);
     const double maxEnergyTransfer = this->GetMaxEnergyTransfer(beta, spParticle->Mass());
     const double expectedLoss      = this->GetExpectedEnergyLoss(beta, beta2, xi, maxEnergyTransfer);
-    const double kappa             = xi / maxEnergyTransfer;
+
+    if (expectedLoss < 0.f) // the particle is too slow so our model has broken down
+    {
+        spParticle->Kill();
+        return 0.f;
+    }
     
+    const double kappa             = xi / maxEnergyTransfer;
     const double actualLoss = this->SampleDeltaE(expectedLoss, kappa, beta2, xi);
     const double deltaE = std::min(-actualLoss, 0.); // particle may not gain energy
 
-    spParticle->Increment(deltaX, deltaE);
+    if (!spParticle->Increment(deltaX, deltaE))
+    {
+        spParticle->Kill();
+        return 0.f;
+    }
+
     return deltaE / deltaX;
 }
 
@@ -111,23 +108,38 @@ double Propagator::CalculateTransitionProbability(const double deltaE, const dou
     if (previousKappa > 10.) // Gaussian approximation
     {
         const double sigma = previousXi * std::sqrt((1. - 0.5 * previousBeta2) / previousKappa);
-        return gsl_ran_gaussian_pdf(energyLoss - expectedLoss, sigma);
+        return ROOT::Math::normal_pdf(energyLoss - expectedLoss, sigma);
     }
 
-    const double lambda = (energyLoss - expectedLoss) / previousXi - 1. - previousBeta2 -  std::log(previousKappa) + PhysicalConstants::m_eulerConstant;
+    const double lambda = (energyLoss - expectedLoss) / previousXi - 1. - previousBeta2 - std::log(previousKappa) + PhysicalConstants::m_eulerConstant;
 
     if (previousKappa > 0.01) // Vavilov
         return this->GetVavilovProbabilityDensity(previousKappa, previousBeta2, lambda);
 
+    //   const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - previousBeta2 - std::log(previousKappa);
+    //   const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
+
+   // if (lambda > lambdaMax)
+   //     return 0.f;
+
     // kappa < 0.01; Landau approximation
-    return gsl_ran_landau_pdf(lambda);
+    return ROOT::Math::landau_pdf(lambda); // / (1. - ROOT::Math::landau_cdf_c(lambdaMax));
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 double Propagator::DensityCorrection(const double beta) const
 {  
-    const double x =  std::log10(beta) - 0.5 * std::log10(1. - beta * beta);;
+    const double logBeta = std::log10(beta);
+    const double logBarBeta2 = std::log10(1. - beta * beta);
+
+    if (std::isnan(logBeta) || std::isinf(logBeta))
+        throw std::runtime_error{"Issue calculating density correction log beta"};
+
+    if (std::isnan(logBarBeta2) || std::isinf(logBarBeta2))
+        throw std::runtime_error{"Issue calculating density correction log(1 - beta^2)"};
+
+    const double x =  logBeta - 0.5 * logBarBeta2;
 
     if (x > m_detector.m_sternheimerX1)
         return 2. * std::log(10.) * x - m_cBar;
@@ -145,19 +157,19 @@ double Propagator::SampleDeltaE(const double meanEnergyLoss, const double kappa,
     if (kappa > 10.) // Gaussian approximation
     {
         const double sigma = xi * std::sqrt((1. - 0.5 * beta2) / kappa);
-        return meanEnergyLoss + gsl_ran_gaussian(m_pGenerator, sigma);
+        return m_pRandom->Gaus(meanEnergyLoss, sigma);
     }
 
     if (kappa > 0.01) // Vavilov
         return meanEnergyLoss + xi * (this->SampleFromVavilovDistribution(kappa, beta2) + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
 
     // kappa < 0.01; Landau approximation
-    const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - beta2 - std::log(kappa);
-    const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
+    // const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - beta2 - std::log(kappa);
+    // const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
 
-    double lambda = 0.f;
+    double lambda = m_pRandom->Landau(); //0.f;
 
-    do lambda = gsl_ran_landau(m_pGenerator); while (lambda > lambdaMax);
+  //  do lambda = ); while (lambda > lambdaMax);
 
     // Note that the Landau mode is at approximately -0.22278
     return meanEnergyLoss + xi * (lambda + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
