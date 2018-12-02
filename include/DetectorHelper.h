@@ -27,7 +27,7 @@ public:
 
     /**
      *  @brief  Get a MicroBooNE-like detector
-     * 
+     *
      *  @return the MicroBooNE detector
      */
     static Detector GetMicroBooNEDetector() noexcept;

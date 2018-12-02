@@ -3,7 +3,7 @@
 # Build products
 
 # - koala-test executable
-file(GLOB_RECURSE TEST_SRCS *.cc)
+set(TEST_SRCS Test.cc)
 
 set(TEST_EXECUTABLE_NAME bethe-faster-test)
 add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SRCS})

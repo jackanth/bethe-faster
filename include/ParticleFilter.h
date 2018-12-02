@@ -78,11 +78,27 @@ public:
     MassHypothesis(const double mass, std::vector<double> priorFinalEnergyDistribution);
 
     /**
+     *  @brief  Constructor
+     *
+     *  @param  mass the mass
+     *  @param  finalEnergy the final energy
+     *  @param  numberOfParticles the number of particles
+     */
+    MassHypothesis(const double mass, const double finalEnergy, const std::size_t numberOfParticles = 1000UL);
+
+    /**
      *  @brief  Get the mass
      *
      *  @return the mass
      */
     double Mass() const noexcept;
+
+    /**
+     *  @brief  Get the number of particles
+     *
+     *  @return the number of particles
+     */
+    std::size_t NumberOfParticles() const noexcept;
 
     /**
      *  @brief  Get the prior final energy distribution
@@ -95,21 +111,7 @@ private:
     std::shared_ptr<Propagator> m_spPropagator;                 ///< The propagator
     double                      m_mass;                         ///< The particle mass
     std::vector<double>         m_priorFinalEnergyDistribution; ///< The prior final energy distribution
-};
-
-/**
- *  @brief  FilterOptions struct
- */
-struct FilterOptions
-{
-    /**
-     *  @brief  Constructor
-     */
-    FilterOptions() noexcept;
-
-    double      m_stepSize;            ///< The step size (cm)
-    std::size_t m_nParticles;          ///< The number of particles
-    std::size_t m_maxUsedObservations; ///< The maximum number of observations to use
+    std::size_t                 m_numberOfParticles;            ///< The number of particles
 };
 
 /**
@@ -127,35 +129,30 @@ public:
     /**
      *  @brief  Constructor
      *
-     *  @param  spPropagator shared pointer to the propagator
+     *  @param  detector the detector
      *  @param  options the options
      */
-    ParticleFilter(std::shared_ptr<Propagator> spPropagator, FilterOptions options = FilterOptions());
-
-    /**
-     *  @brief  Destructor
-     */
-    ~ParticleFilter();
+    ParticleFilter(Detector detector);
 
     /**
      *  @brief  Filter a uniform energy distribution on a particle history
      *
      *  @param  history the particle histroy
-     *  @param  spMassHypothesis shared pointer to the mass hypothesis
+     *  @param  massHypothesis the mass hypothesis
      *
      *  @return the distribution history
      */
-    DistributionHistory Filter(const Particle::History &history, const std::shared_ptr<MassHypothesis> &spMassHypothesis) const;
+    DistributionHistory Filter(const Particle::History &history, const MassHypothesis &massHypothesis) const;
 
     /**
      *  @brief  Filter a uniform energy distribution on a set of observations
      *
      *  @param  observations the ordered vector of observations
-     *  @param  spMassHypothesis shared pointer to the mass hypothesis
+     *  @param  massHypothesis the mass hypothesis
      *
      *  @return the distribution history
      */
-    DistributionHistory Filter(const ObservedStateVector &observations, const std::shared_ptr<MassHypothesis> &spMassHypothesis) const;
+    DistributionHistory Filter(ObservedStateVector observations, const MassHypothesis &massHypothesis) const;
 
     /**
      *  @brief  Calculate the marginal likelihood, given a distribution history
@@ -194,12 +191,9 @@ public:
     static double CalculatePida(const ObservedStateVector &observations);
 
 private:
-    std::shared_ptr<Propagator>                m_spPropagator;                  ///< The propagator
-    std::shared_ptr<ParticleDistribution>      m_spDistribution;                ///< The current distribution
-    ROOT::Math::Random<ROOT::Math::GSLRngMT> * m_pRandom;                       ///< Address of a ROOT TRandom object
-    FilterOptions                              m_options;                       ///< The options
-    std::shared_ptr<std::vector<double>>       m_spResamplingProbabilityVector; ///< The resampling probability vector
-    std::shared_ptr<std::vector<unsigned int>> m_spResamplingParticleVector;    ///< The resampling particle vector
+    std::shared_ptr<Propagator>                      m_spPropagator;    ///< The propagator
+    std::shared_ptr<ParticleDistribution>            m_spDistribution;  ///< The current distribution
+    mutable ROOT::Math::Random<ROOT::Math::GSLRngMT> m_randomGenerator; ///< A ROOT TRandom object
 
     /**
      *  @brief  Filter on an observation
@@ -207,8 +201,14 @@ private:
      *  @param  observation the observation
      *  @param  isFirstObservation whether this is the first observation
      *  @param  nSteps the number of propagation steps
+     *  @param  spResamplingProbabilityVector shared pointer to the resampling probability vector
+     *  @param  spResamplingParticleVector shared pointer to the resampling particle vector
+     *  @param  numParticles the number of particles
+     *  @param  stepSize the step size
      */
-    bool FilterOnObservation(const ObservedParticleState &observation, const bool isFirstObservation, const std::size_t nSteps) const;
+    bool FilterOnObservation(const ObservedParticleState &observation, const bool isFirstObservation, const std::size_t nSteps,
+        const std::shared_ptr<std::vector<double>> &spResamplingProbabilityVector,
+        const std::shared_ptr<std::vector<unsigned int>> &spResamplingParticleVector, const std::size_t numParticles, const double stepSize) const;
 
     /**
      *  @brief  Check the distribution weights
@@ -218,31 +218,36 @@ private:
     bool CheckDistributionWeights() const;
 
     /**
-     *  @brief  Check the legality of the filter options
+     *  @brief  Check the mass hypothesis
      *
-     *  @param  spMassHypothesis shared pointer to the mass hypothesis
+     *  @param  massHypothesis the mass hypothesis
      */
-    void CheckOptions(const std::shared_ptr<MassHypothesis> &spMassHypothesis) const;
+    void CheckMassHypothesis(const MassHypothesis &massHypothesis) const;
 
     /**
      *  @brief  Create a uniform prior over the initial energy bounds
      *
-     *  @param  spMassHypothesis shared pointer to the mass hypothesis
+     *  @param  massHypothesis the mass hypothesis
      *  @param  initialResidualRange the initial residual range
      */
-    void CreateDistribution(const std::shared_ptr<MassHypothesis> &spMassHypothesis, const double initialResidualRange) const;
+    void CreateDistribution(const MassHypothesis &massHypothesis, const double initialResidualRange) const;
 
     /**
      *  @brief  Propagate particles in the distribution
      *
      *  @param  nSteps the number of steps
+     *  @param  stepSize the step size
      */
-    void PropagateParticles(const std::size_t nSteps) const;
+    void PropagateParticles(const std::size_t nSteps, const double stepSize) const;
 
     /**
      *  @brief  Resample the distribution
+     *
+     *  @param  spResamplingProbabilityVector shared pointer to the resampling probability vector
+     *  @param  spResamplingParticleVector shared pointer to the resampling particle vector
      */
-    void ResampleDistribution() const;
+    void ResampleDistribution(const std::shared_ptr<std::vector<double>> &spResamplingProbabilityVector,
+        const std::shared_ptr<std::vector<unsigned int>> &                spResamplingParticleVector) const;
 
     /**
      *  @brief  Get the effective sample size
@@ -250,6 +255,15 @@ private:
      *  @return the effective sample size
      */
     double EffectiveSampleSize() const;
+
+    /**
+     *  @brief  Get the median step size
+     *
+     *  @param  observations the observations
+     *
+     *  @return the median step size
+     */
+    double GetMedianStepSize(ObservedStateVector observations) const;
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -280,6 +294,13 @@ inline double ObservedParticleState::Getdx() const noexcept
 inline double MassHypothesis::Mass() const noexcept
 {
     return m_mass;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline std::size_t MassHypothesis::NumberOfParticles() const noexcept
+{
+    return m_numberOfParticles;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

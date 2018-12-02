@@ -1,34 +1,53 @@
-#include "Propagator.h"
-#include "ParticleHelper.h"
-#include "ParticleFilter.h"
+/**
+ *  @file   bethe-faster/test/Test.h
+ *
+ *  @brief  Header file for the test script
+ *
+ *  $Log: $
+ */
 
-#ifdef USE_ROOT
-    #include "TApplication.h"
-    #include "TCanvas.h"
-    #include "TGraph.h"
-#endif // #ifdef USE_ROOT
+#ifndef BF_TEST_H
+#define BF_TEST_H 1
 
-#include <functional>
+#include "BetheFaster.h"
 
-#ifdef USE_ROOT
-void SetPlotStyle();
-TApplication *Initialize();
-TGraph *PlotParticledQdx(const bf::Propagator &propagator, const std::shared_ptr<bf::Particle> &spParticle);
-TGraph *PlotParticledEdx(const bf::Propagator &propagator, const std::shared_ptr<bf::Particle> &spParticle);
-TGraph *PlotParticleBetas(const bf::Propagator &propagator, const std::shared_ptr<bf::Particle> &spParticle);
-TGraph *PlotParticleKappas(const bf::Propagator &propagator, const std::shared_ptr<bf::Particle> &spParticle);
-TGraph *PlotParticleEnergies(const bf::Propagator &propagator, const std::shared_ptr<bf::Particle> &spParticle);
-void Pause();
-TCanvas * PlotForParticles(const std::string &name, const std::function<TGraph *(const bf::Propagator &, const std::shared_ptr<bf::Particle> &)> &graphGetter,
-    const std::string &yaxisLabel, const bool logY, const std::shared_ptr<bf::Particle> &spMuon, const std::shared_ptr<bf::Particle> &spProton,
-    const std::shared_ptr<bf::Particle> &spPion, const std::shared_ptr<bf::Particle> &spKaon, std::int16_t *palette, const std::int16_t markerStyle, const bf::Propagator &propagator);
-TCanvas * PlotForParticle(const std::string &name, const std::function<TGraph *(const bf::Propagator &, const std::shared_ptr<bf::Particle> &)> &graphGetter,
-    const std::string &yaxisLabel, const bool logY, const std::shared_ptr<bf::Particle> &spParticle, std::int16_t color, const std::int16_t markerStyle, const bf::Propagator &propagator);
-TCanvas * PlotDistributionError(const std::string &name, const std::function<TGraph *(const bf::Propagator &, const std::shared_ptr<bf::Particle> &)> &graphGetter,
-    const std::string &yaxisLabel, const bool logY, const std::shared_ptr<bf::Particle> &spParticle, const std::int16_t color, const std::int16_t markerStyle, const bf::Propagator &propagator,
-    const bf::ParticleFilter::DistributionHistory &distributionHistory, const bf::Particle::History &particleHistory, const std::int16_t errorColor);
-#endif // #ifdef USE_ROOT
+/**
+ *  @brief  Test the generation step
+ *
+ *  @param  detector the detector
+ */
+void TestGeneration(const bf::Detector &detector);
 
-std::shared_ptr<bf::Particle> PropagateParticle(const bf::Propagator &propagator, const double mass, const double energy, const double deltaX);
-void TestGeneration();
-void TestFiltering();
+/**
+ *  @brief  Generate a set of particles and save the plots
+ *
+ *  @param  propagator the propagator
+ *  @param  mode the mode
+ *  @param  modeName the mode name
+ *  @param  deltaX the effective thickness (cm)
+ *  @param  maxEnergy the maximum energy (MeV)
+ */
+void GenerateParticles(const bf::Propagator &propagator, const bf::Propagator::PROPAGATION_MODE mode, const std::string &modeName,
+    const double deltaX, const double maxEnergy);
+
+/**
+ *  @brief  Test the filtering step
+ *
+ *  @param  detector the detector
+ */
+void TestFiltering(const bf::Detector &detector);
+
+/**
+ *  @brief  Run the filter on a particle
+ *
+ *  @param  detector the detector
+ *  @param  propagator the propagator
+ *  @param  type the particle type
+ *  @param  spParticle shared pointer to the particle
+ *  @param  deltaX the step size
+ *  @param  maxEnergy the maximum energy
+ */
+void FilterOnParticle(const bf::Detector &detector, const bf::Propagator &propagator, const bf::ParticleHelper::PARTICLE_TYPE type,
+    const std::shared_ptr<bf::Particle> &spParticle, const double deltaX, const double maxEnergy);
+
+#endif // #ifndef BF_TEST_H

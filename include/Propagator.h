@@ -37,6 +37,16 @@ class Propagator
 {
 public:
     /**
+     *  @brief  An enumeration of the different types of propagation
+     */
+    enum class PROPAGATION_MODE
+    {
+        STOCHASTIC, ///< Stochastic propagation
+        MEAN,       ///< Mean propagation
+        MODAL       ///< Modal propagation
+    };
+
+    /**
      *  @brief  Constructor
      *
      *  @param  detector the detector
@@ -48,10 +58,12 @@ public:
      *
      *  @param  spParticle shared pointer to the particle
      *  @param  stepSize the step size
+     *  @param  mode the propagation mode
      *
      *  @return the dE/dx value
      */
-    double PropagateBackwards(const std::shared_ptr<Particle> &spParticle, const double stepSize) const;
+    double PropagateBackwards(const std::shared_ptr<Particle> &spParticle, const double stepSize,
+        const PROPAGATION_MODE mode = PROPAGATION_MODE::STOCHASTIC) const;
 
     /**
      *  @brief  Calculate Vavilov's kappa
@@ -112,6 +124,16 @@ protected:
      */
     double GetVavilovProbabilityDensity(const double kappa, const double beta2, const double lambda) const;
 
+    /**
+     *  @brief  Get the Vavilov mode
+     *
+     *  @param  kappa the kappa value
+     *  @param  beta2 the beta^2 value
+     *
+     *  @return the mode
+     */
+    double GetVavilovMode(const double kappa, const double beta2) const;
+
     friend class ParticleFilter;
 
 private:
@@ -150,6 +172,18 @@ private:
      *  @return the sample
      */
     double SampleDeltaE(const double meanEnergyLoss, const double kappa, const double beta2, const double xi) const;
+
+    /**
+     *  @brief  Get the mode of the delta E distribution
+     *
+     *  @param  meanEnergyLoss the mean energy loss
+     *  @param  kappa the kappa value
+     *  @param  beta2 the beta^2 value
+     *  @param  xi the xi value
+     *
+     *  @return the mode
+     */
+    double GetDeltaEMode(const double meanEnergyLoss, const double kappa, const double beta2, const double xi) const;
 
     /**
      *  @brief  Get the maximum energy transfer
@@ -205,6 +239,23 @@ inline double Propagator::CalculateObservationProbability(const std::shared_ptr<
 inline double Propagator::GetVavilovProbabilityDensity(const double kappa, const double beta2, const double lambda) const
 {
     return ROOT::Math::VavilovFast{kappa, beta2}.Pdf(lambda);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Propagator::GetVavilovMode(const double kappa, const double beta2) const
+{
+    return ROOT::Math::VavilovFast{kappa, beta2}.Mode();
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Propagator::GetExpectedEnergyLoss(const double beta, const double beta2, const double xi, const double maxEnergyLoss) const
+{
+    const double lnArg = 2. * PhysicalConstants::m_electronMass * beta2 * maxEnergyLoss /
+                         ((1. - beta2) * m_detector.m_avgIonizationEnergy * m_detector.m_avgIonizationEnergy * 1.e-12);
+
+    return xi * (std::log(lnArg) - 2. * beta2 - this->DensityCorrection(beta));
 }
 
 } // namespace bf

@@ -8,24 +8,24 @@
 
 #include "FilterHelper.h"
 
-#include "Math/Random.h"
 #include "Math/GSLRndmEngines.h"
+#include "Math/Random.h"
 
 #include <ctime>
 
 namespace bf
 {
 
-std::vector<double> FilterHelper::GetGaussianEnergyDistribution(const std::size_t nParticles, const double mean, const double sigma)
+std::vector<double> FilterHelper::GetGaussianEnergyDistribution(const std::size_t nParticles, const double mean, const double sigma, const double min)
 {
     std::vector<double> distribution;
-    auto generator = ROOT::Math::Random<ROOT::Math::GSLRngMT>{static_cast<std::uint32_t>(std::time(nullptr))};
+    auto                generator = ROOT::Math::Random<ROOT::Math::GSLRngMT>{static_cast<std::uint32_t>(std::time(nullptr))};
 
     while (distribution.size() < nParticles)
     {
         const double data = generator.Gaus(mean, sigma);
 
-        if (data > std::numeric_limits<double>::epsilon())
+        if (data > min)
             distribution.push_back(data);
     }
 
@@ -37,7 +37,7 @@ std::vector<double> FilterHelper::GetGaussianEnergyDistribution(const std::size_
 std::vector<double> FilterHelper::GetUniformEnergyDistribution(const std::size_t nParticles, const double min, const double max)
 {
     std::vector<double> distribution;
-    auto generator = ROOT::Math::Random<ROOT::Math::GSLRngMT>{static_cast<std::uint32_t>(std::time(nullptr))};
+    auto                generator = ROOT::Math::Random<ROOT::Math::GSLRngMT>{static_cast<std::uint32_t>(std::time(nullptr))};
 
     while (distribution.size() < nParticles)
     {
@@ -61,7 +61,7 @@ std::vector<double> FilterHelper::GetPerfectlyUniformEnergyDistribution(const st
         throw std::runtime_error{"There must be at least two particles"};
 
     std::vector<double> distribution;
-    const double deltaE = (max - min) / static_cast<double>(nParticles - 1UL);
+    const double        deltaE = (max - min) / static_cast<double>(nParticles - 1UL);
 
     for (std::size_t i = 0; i < nParticles; ++i)
         distribution.push_back(min + static_cast<double>(i) * deltaE);

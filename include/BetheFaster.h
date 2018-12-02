@@ -12,11 +12,11 @@
 #include "Detector.h"
 #include "Particle.h"
 #include "ParticleFilter.h"
-#include "Propagator.h"
 #include "PhysicalConstants.h"
+#include "Propagator.h"
 
 #include "DetectorHelper.h"
-#include "PlotHelper.h"
 #include "FilterHelper.h"
+#include "PlotHelper.h"
 
 #endif // #ifndef BF_BETHE_FASTER_H

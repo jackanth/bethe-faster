@@ -35,6 +35,10 @@
         "utility": "cpp",
         "chrono": "cpp",
         "functional": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "atomic": "cpp",
+        "cstdarg": "cpp",
+        "deque": "cpp",
+        "iomanip": "cpp"
     }
 }

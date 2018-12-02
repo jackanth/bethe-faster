@@ -25,11 +25,14 @@ ParticleState::ParticleState(const double residualRange, const double kineticEne
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-Particle::Particle(const double mass, const double finalKineticEnergy, const double initialResidualRange, const bool recordHistory) :
+Particle::Particle(const double mass, const double finalKineticEnergy, const double finalResidualRange, const bool recordHistory) :
+    m_finalKineticEnergy{finalKineticEnergy},
+    m_finalResidualRange{finalResidualRange},
     m_mass(mass),
     m_kineticEnergy(finalKineticEnergy),
-    m_residualRange(initialResidualRange),
-    m_recordHistory(recordHistory)
+    m_residualRange(finalResidualRange),
+    m_recordHistory(recordHistory),
+    m_hasFailed(false)
 {
     if (m_mass < std::numeric_limits<double>::epsilon())
         throw std::runtime_error("Could not initialize particle with a very small or negative mass");
@@ -44,7 +47,7 @@ void Particle::Increment(const double deltaPosition, const double deltaEnergy)
 {
     if (m_hasFailed)
         return;
-        
+
     if (deltaPosition < 0.)
         throw std::runtime_error{"Cannot decrement position"};
 
@@ -59,6 +62,16 @@ void Particle::Increment(const double deltaPosition, const double deltaEnergy)
 
     m_kineticEnergy += deltaEnergy;
     m_residualRange += deltaPosition;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void Particle::Reset() noexcept
+{
+    m_residualRange = m_finalResidualRange;
+    m_kineticEnergy = m_finalKineticEnergy;
+    m_hasFailed     = false;
+    m_history.clear();
 }
 
 } // namespace bf

@@ -88,7 +88,6 @@ endif()
 find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
 include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
 link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
-add_definitions(${ROOT_DEFINITIONS} -DUSE_ROOT)
 include(${ROOT_USE_FILE})
 
 if (USE_OPENMP)
@@ -101,7 +100,7 @@ if (USE_OPENMP)
 endif()
 
 # - build the sources into an object library
-set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleFilter.cc src/FilterHelper.cc src/PlotHelper.cc)
+set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleFilter.cc src/FilterHelper.cc src/PlotHelper.cc src/ParticleHelper.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})

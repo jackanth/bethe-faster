@@ -9,8 +9,8 @@
 #ifndef BF_PARTICLE_H
 #define BF_PARTICLE_H 1
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace bf
 {
@@ -127,16 +127,21 @@ public:
      */
     bool HasFailed() const noexcept;
 
+    /**
+     *  @brief  Reset the particle to its final state
+     */
+    void Reset() noexcept;
+
 protected:
     /**
      *  @brief  Constructor
      *
      *  @param  mass the particle mass (MeV)
      *  @param  finalKineticEnergy the final kinetic energy (MeV)
-     *  @param  initialResidualRange the initial residual range (cm)
+     *  @param  finalResidualRange the final residual range (cm)
      *  @param  recordHistory whether to record the particle history
      */
-    Particle(const double mass, const double finalKineticEnergy, const double initialResidualRange = 0., const bool recordHistory = true);
+    Particle(const double mass, const double finalKineticEnergy, const double finalResidualRange = 0., const bool recordHistory = true);
 
     /**
      *  @brief  Increment the particle
@@ -165,12 +170,14 @@ protected:
     friend class ParticleHelper;
 
 private:
-    double  m_mass;          ///< The particle mass (MeV)
-    double  m_kineticEnergy; ///< The kinetic energy (MeV)
-    double  m_residualRange; ///< The current residual range (cm)
-    History m_history;       ///< The particle history
-    bool    m_recordHistory; ///< Whether to record the particle history
-    bool    m_hasFailed;     ///< Whether the particle has failed in its propagation
+    double  m_finalKineticEnergy; ///< The final kinetic energy
+    double  m_finalResidualRange; ///< The final residual range
+    double  m_mass;               ///< The particle mass (MeV)
+    double  m_kineticEnergy;      ///< The kinetic energy (MeV)
+    double  m_residualRange;      ///< The current residual range (cm)
+    History m_history;            ///< The particle history
+    bool    m_recordHistory;      ///< Whether to record the particle history
+    bool    m_hasFailed;          ///< Whether the particle has failed in its propagation
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------

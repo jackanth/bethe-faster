@@ -22,16 +22,16 @@ struct Detector
      */
     Detector() noexcept;
 
-    double       m_density;               ///< The density (g/cm^3)
-    double       m_avgIonizationEnergy;   ///< The average ionization energy (eV)
-    unsigned int m_atomicNumber;          ///< The atomic number
-    double       m_atomicMass;            ///< The atomic mass (g/mol)
-    double       m_plasmaEnergy;          ///< The plasma energy (eV)
-    double       m_sternheimerX0;         ///< The Sternheimer x0 parameter
-    double       m_sternheimerX1;         ///< The Sternheimer x1 parameter
-    double       m_sternheimerK;          ///< The Sternheimer k parameter
-    double       m_sternheimerA;          ///< The Sternheimer a parameter
-    double       m_sternheimerDelta0;     ///< The Sternheimer delta0 parameter
+    double       m_density;             ///< The density (g/cm^3)
+    double       m_avgIonizationEnergy; ///< The average ionization energy (eV)
+    unsigned int m_atomicNumber;        ///< The atomic number
+    double       m_atomicMass;          ///< The atomic mass (g/mol)
+    double       m_plasmaEnergy;        ///< The plasma energy (eV)
+    double       m_sternheimerX0;       ///< The Sternheimer x0 parameter
+    double       m_sternheimerX1;       ///< The Sternheimer x1 parameter
+    double       m_sternheimerK;        ///< The Sternheimer k parameter
+    double       m_sternheimerA;        ///< The Sternheimer a parameter
+    double       m_sternheimerDelta0;   ///< The Sternheimer delta0 parameter
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
