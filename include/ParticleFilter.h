@@ -5,14 +5,15 @@
  *
  *  $Log: $
  */
+
 #ifndef BF_PARTICLE_FILTER_H
 #define BF_PARTICLE_FILTER_H 1
 
 #include "Particle.h"
 #include "Propagator.h"
 
-#include "Math/Random.h"
 #include "Math/GSLRndmEngines.h"
+#include "Math/Random.h"
 
 #include <memory>
 #include <vector>
@@ -29,18 +30,18 @@ public:
     /**
      *  @brief  Constructor
      *
-     *  @param  position the position (cm)
+     *  @param  residualRange the residual range (cm)
      *  @param  dEdx the dE/dx value (MeV/cm)
      *  @param  dx the change in position (cm)
      */
-    ObservedParticleState(const double position, const double dEdx, const double dx) noexcept;
+    ObservedParticleState(const double residualRange, const double dEdx, const double dx) noexcept;
 
     /**
-     *  @brief  Get the position (cm)
+     *  @brief  Get the residual range (cm)
      *
-     *  @return the position
+     *  @return the residual range
      */
-    double GetPosition() const noexcept;
+    double GetResidualRange() const noexcept;
 
     /**
      *  @brief  Get the dE/dx value (MeV/cm)
@@ -57,9 +58,9 @@ public:
     double Getdx() const noexcept;
 
 private:
-    double m_position; ///< The position (cm)
-    double m_dEdx;     ///< The dE/dx value (MeV/cm)
-    double m_dx;       ///< The dx value (cm)
+    double m_residualRange; ///< The residual range (cm)
+    double m_dEdx;          ///< The dE/dx value (MeV/cm)
+    double m_dx;            ///< The dx value (cm)
 };
 
 /**
@@ -72,9 +73,9 @@ public:
      *  @brief  Constructor
      *
      *  @param  mass the mass
-     *  @param  priorEnergyDistribution the prior energy distribution
+     *  @param  priorFinalEnergyDistribution the prior final energy distribution
      */
-    MassHypothesis(const double mass, std::vector<double> priorEnergyDistribution);
+    MassHypothesis(const double mass, std::vector<double> priorFinalEnergyDistribution);
 
     /**
      *  @brief  Get the mass
@@ -84,16 +85,16 @@ public:
     double Mass() const noexcept;
 
     /**
-     *  @brief  Get the prior energy distribution
+     *  @brief  Get the prior final energy distribution
      *
-     *  @return the prior energy distribution
+     *  @return the prior final energy distribution
      */
-    const std::vector<double> &PriorEnergyDistribution() const noexcept;
+    const std::vector<double> &PriorFinalEnergyDistribution() const noexcept;
 
 private:
-    std::shared_ptr<Propagator> m_spPropagator;            ///< The propagator
-    double                      m_mass;                    ///< The particle mass
-    std::vector<double>         m_priorEnergyDistribution; ///< The prior energy distribution
+    std::shared_ptr<Propagator> m_spPropagator;                 ///< The propagator
+    double                      m_mass;                         ///< The particle mass
+    std::vector<double>         m_priorFinalEnergyDistribution; ///< The prior final energy distribution
 };
 
 /**
@@ -117,10 +118,11 @@ struct FilterOptions
 class ParticleFilter
 {
 public:
-    using WeightedParticle     = std::pair<double, std::shared_ptr<Particle>>;       ///< Alias for a particle with a weight
-    using ParticleDistribution = std::vector<WeightedParticle>;                      ///< Alias for a particle distribution
-    using ObservedStateVector  = std::vector<ObservedParticleState>;                 ///< Alias for a vector of observed particle states
-    using DistributionHistory  = std::vector<std::shared_ptr<ParticleDistribution>>; ///< Alias for a history of distributions
+    using WeightedParticle     = std::pair<double, std::shared_ptr<Particle>>;     ///< Alias for a particle with a weight
+    using ParticleDistribution = std::vector<WeightedParticle>;                    ///< Alias for a particle distribution
+    using ObservedStateVector  = std::vector<ObservedParticleState>;               ///< Alias for a vector of observed particle states
+    using DistributionRecord   = std::vector<std::pair<double, double>>;           ///< Alias for a distribution record
+    using DistributionHistory  = std::vector<std::shared_ptr<DistributionRecord>>; ///< Alias for a distribution history
 
     /**
      *  @brief  Constructor
@@ -192,12 +194,12 @@ public:
     static double CalculatePida(const ObservedStateVector &observations);
 
 private:
-    std::shared_ptr<Propagator>           m_spPropagator;                ///< The propagator
-    std::shared_ptr<ParticleDistribution> m_spDistribution;              ///< The current distribution
-    ROOT::Math::Random<ROOT::Math::GSLRngMT> *                      m_pRandom;                ///< Address of a ROOT TRandom object
-    FilterOptions                         m_options;                     ///< The options
-    std::shared_ptr<std::vector<double>>  m_spResamplingProbabilityVector; ///< The resampling probability vector
-    std::shared_ptr<std::vector<unsigned int>>  m_spResamplingParticleVector;    ///< The resampling particle vector
+    std::shared_ptr<Propagator>                m_spPropagator;                  ///< The propagator
+    std::shared_ptr<ParticleDistribution>      m_spDistribution;                ///< The current distribution
+    ROOT::Math::Random<ROOT::Math::GSLRngMT> * m_pRandom;                       ///< Address of a ROOT TRandom object
+    FilterOptions                              m_options;                       ///< The options
+    std::shared_ptr<std::vector<double>>       m_spResamplingProbabilityVector; ///< The resampling probability vector
+    std::shared_ptr<std::vector<unsigned int>> m_spResamplingParticleVector;    ///< The resampling particle vector
 
     /**
      *  @brief  Filter on an observation
@@ -226,9 +228,9 @@ private:
      *  @brief  Create a uniform prior over the initial energy bounds
      *
      *  @param  spMassHypothesis shared pointer to the mass hypothesis
-     *  @param  initialPosition the initial position
+     *  @param  initialResidualRange the initial residual range
      */
-    void CreateDistribution(const std::shared_ptr<MassHypothesis> &spMassHypothesis, const double initialPosition) const;
+    void CreateDistribution(const std::shared_ptr<MassHypothesis> &spMassHypothesis, const double initialResidualRange) const;
 
     /**
      *  @brief  Propagate particles in the distribution
@@ -253,9 +255,9 @@ private:
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline double ObservedParticleState::GetPosition() const noexcept
+inline double ObservedParticleState::GetResidualRange() const noexcept
 {
-    return m_position;
+    return m_residualRange;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -282,9 +284,9 @@ inline double MassHypothesis::Mass() const noexcept
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline const std::vector<double> &MassHypothesis::PriorEnergyDistribution() const noexcept
+inline const std::vector<double> &MassHypothesis::PriorFinalEnergyDistribution() const noexcept
 {
-    return m_priorEnergyDistribution;
+    return m_priorFinalEnergyDistribution;
 }
 
 } // namespace bf

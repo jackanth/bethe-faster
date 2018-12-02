@@ -5,6 +5,7 @@
  *
  *  $Log: $
  */
+
 #ifndef BF_PARTICLE_H
 #define BF_PARTICLE_H 1
 
@@ -36,11 +37,11 @@ class ParticleState
 {
 public:
     /**
-     *  @brief  Get the position (cm)
+     *  @brief  Get the residual range (cm)
      *
-     *  @return the position
+     *  @return the residual range
      */
-    double GetPosition() const noexcept;
+    double GetResidualRange() const noexcept;
 
     /**
      *  @brief  Get the kinetic energy (MeV)
@@ -67,17 +68,17 @@ protected:
     /**
      *  @brief  Constructor
      *
-     *  @param  position the position (cm)
+     *  @param  residualRange the residual range (cm)
      *  @param  kineticEnergy the kinetic energy (MeV)
      *  @param  dx the delta position (cm)
      *  @param  dEdx the dE/dx value (MeV/cm)
      */
-    ParticleState(const double position, const double kineticEnergy, const double dx, const double dEdx) noexcept;
+    ParticleState(const double residualRange, const double kineticEnergy, const double dx, const double dEdx) noexcept;
 
     friend class Particle;
 
 private:
-    double m_position;      ///< The position (cm)
+    double m_residualRange; ///< The residualRange (cm)
     double m_kineticEnergy; ///< The kinetic energy (MeV)
     double m_dx;            ///< The delta position
     double m_dEdx;          ///< The dE/dx value (MeV/cm)
@@ -90,16 +91,6 @@ class Particle
 {
 public:
     using History = std::vector<std::shared_ptr<ParticleState>>; ///< An alias for the history of particle states
-
-    /**
-     *  @brief  Constructor
-     *
-     *  @param  mass the particle mass (MeV)
-     *  @param  initialKineticEnergy the initial kinetic energy (MeV)
-     *  @param  initialPosition the initial position (cm)
-     *  @param  recordHistory whether to record the particle history
-     */
-    Particle(const double mass, const double initialKineticEnergy, const double initialPosition = 0., const bool recordHistory = true);
 
     /**
      *  @brief  Get the mass (MeV)
@@ -123,67 +114,71 @@ public:
     double KineticEnergy() const noexcept;
 
     /**
-     *  @brief  Get the current position (cm)
+     *  @brief  Get the current residual range (cm)
      *
-     *  @return the current position
+     *  @return the current residual range
      */
-    double Position() const noexcept;
+    double ResidualRange() const noexcept;
 
     /**
-     *  @brief  Get the last kinetic energy (MeV)
+     *  @brief  Get whether the particle has failed in its propagation
      *
-     *  @return the last kinetic energy
+     *  @return whether the particle has failed
      */
-    double LastKineticEnergy() const;
-
-    /**
-     *  @brief  Get whether the particle is alive
-     *
-     *  @return whether the particle is alive
-     */
-    bool IsAlive() const noexcept;
+    bool HasFailed() const noexcept;
 
 protected:
+    /**
+     *  @brief  Constructor
+     *
+     *  @param  mass the particle mass (MeV)
+     *  @param  finalKineticEnergy the final kinetic energy (MeV)
+     *  @param  initialResidualRange the initial residual range (cm)
+     *  @param  recordHistory whether to record the particle history
+     */
+    Particle(const double mass, const double finalKineticEnergy, const double initialResidualRange = 0., const bool recordHistory = true);
+
     /**
      *  @brief  Increment the particle
      *
      *  @param  deltaPosition the position value by which to increment (cm)
      *  @param  deltaEnergy the kinetic energy by which to increment (MeV)
-     *
-     *  @return whether beta is still nonzero
      */
-    bool Increment(const double deltaPosition, const double deltaEnergy);
+    void Increment(const double deltaPosition, const double deltaEnergy);
 
     /**
      *  @brief  Set the kinetic energy
      *
-     *  @param  kineticEnergy the new kinetic energy
+     *  @param  kineticEnergy the kinetic energy (MeV)
      */
     void SetKineticEnergy(const double kineticEnergy) noexcept;
 
     /**
-     *  @brief  Kill the particle
+     *  @brief  Set whether the particle has failed
+     *
+     *  @param  hasFailed whether the particle has failed
      */
-    void Kill() noexcept;
+    void HasFailed(const bool hasFailed) noexcept;
 
     friend class Propagator;
     friend class ParticleFilter;
+    friend class ParticleHelper;
 
 private:
     double  m_mass;          ///< The particle mass (MeV)
     double  m_kineticEnergy; ///< The kinetic energy (MeV)
-    double  m_position;      ///< The current position (cm)
+    double  m_residualRange; ///< The current residual range (cm)
     History m_history;       ///< The particle history
     bool    m_recordHistory; ///< Whether to record the particle history
-    bool    m_isAlive;       ///< Whether the particle is alive
+    bool    m_hasFailed;     ///< Whether the particle has failed in its propagation
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline double ParticleState::GetPosition() const noexcept
+inline double ParticleState::GetResidualRange() const noexcept
 {
-    return m_position;
+    return m_residualRange;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -234,16 +229,16 @@ inline double Particle::KineticEnergy() const noexcept
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline double Particle::Position() const noexcept
+inline double Particle::ResidualRange() const noexcept
 {
-    return m_position;
+    return m_residualRange;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline bool Particle::IsAlive() const noexcept
+inline bool Particle::HasFailed() const noexcept
 {
-    return m_isAlive;
+    return m_hasFailed;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -255,10 +250,9 @@ inline void Particle::SetKineticEnergy(const double kineticEnergy) noexcept
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline void Particle::Kill() noexcept
+inline void Particle::HasFailed(const bool hasFailed) noexcept
 {
-    m_isAlive = false;
-    m_kineticEnergy = 0.;
+    m_hasFailed = hasFailed;
 }
 
 } // namespace bf

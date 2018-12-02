@@ -101,7 +101,7 @@ if (USE_OPENMP)
 endif()
 
 # - build the sources into an object library
-set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleHelper.cc src/ParticleFilter.cc src/FilterHelper.cc)
+set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleFilter.cc src/FilterHelper.cc src/PlotHelper.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})

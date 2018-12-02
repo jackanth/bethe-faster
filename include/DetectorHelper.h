@@ -5,6 +5,7 @@
  *
  *  $Log: $
  */
+
 #ifndef BF_DETECTOR_HELPER_H
 #define BF_DETECTOR_HELPER_H 1
 

@@ -5,11 +5,9 @@
  *
  *  $Log: $
  */
+
 #ifndef BF_DETECTOR_H
 #define BF_DETECTOR_H 1
-
-#include <stdexcept>
-#include <limits>
 
 namespace bf
 {

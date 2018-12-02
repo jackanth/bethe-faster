@@ -14,8 +14,8 @@
 namespace bf
 {
 
-ParticleState::ParticleState(const double position, const double kineticEnergy, const double dx, const double dEdx) noexcept :
-    m_position{position},
+ParticleState::ParticleState(const double residualRange, const double kineticEnergy, const double dx, const double dEdx) noexcept :
+    m_residualRange{residualRange},
     m_kineticEnergy{kineticEnergy},
     m_dx{dx},
     m_dEdx{dEdx}
@@ -25,59 +25,40 @@ ParticleState::ParticleState(const double position, const double kineticEnergy, 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-Particle::Particle(const double mass, const double initialKineticEnergy, const double initialPosition, const bool recordHistory) :
+Particle::Particle(const double mass, const double finalKineticEnergy, const double initialResidualRange, const bool recordHistory) :
     m_mass(mass),
-    m_kineticEnergy(initialKineticEnergy),
-    m_position(initialPosition),
-    m_recordHistory(recordHistory),
-    m_isAlive{true}
+    m_kineticEnergy(finalKineticEnergy),
+    m_residualRange(initialResidualRange),
+    m_recordHistory(recordHistory)
 {
-    if (m_mass < 0.)
-        throw std::runtime_error("Could not initialize particle with negative mass");
+    if (m_mass < std::numeric_limits<double>::epsilon())
+        throw std::runtime_error("Could not initialize particle with a very small or negative mass");
 
-    if (m_kineticEnergy < 0.)
-        throw std::runtime_error("Could not initialize particle with negative energy");
+    if (m_kineticEnergy < std::numeric_limits<double>::epsilon())
+        throw std::runtime_error("Could not initialize particle with very small or negative energy");
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-double Particle::LastKineticEnergy() const
+void Particle::Increment(const double deltaPosition, const double deltaEnergy)
 {
-    if (m_history.empty())
-        throw std::runtime_error{"Could not get last kinetic energy for particle because it had no history"};
+    if (m_hasFailed)
+        return;
+        
+    if (deltaPosition < 0.)
+        throw std::runtime_error{"Cannot decrement position"};
 
-    return m_history.back()->GetKineticEnergy();
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-bool Particle::Increment(const double deltaPosition, const double deltaEnergy)
-{
-    if (m_kineticEnergy <= std::numeric_limits<double>::epsilon())
-    {
-        m_isAlive = false;
-        return false;
-    }
-
-    const double newKineticEnergy = m_kineticEnergy + deltaEnergy;
-
-    if (newKineticEnergy <= std::numeric_limits<double>::epsilon())
-    {
-        m_kineticEnergy = 0.;
-        m_isAlive = false;
-        return false;
-    }
+    if (deltaEnergy < 0.)
+        throw std::runtime_error{"Cannot decrement energy"};
 
     if (m_recordHistory)
     {
-        const double dEdx = deltaEnergy / deltaPosition;
-        m_history.emplace_back(std::make_shared<ParticleState>(ParticleState{m_position, m_kineticEnergy, deltaPosition, dEdx})); // add the current state to the history
+        const double dEdx = -deltaEnergy / deltaPosition;
+        m_history.emplace_back(std::make_shared<ParticleState>(ParticleState{m_residualRange, m_kineticEnergy, deltaPosition, dEdx})); // add the current state to the history
     }
 
-    m_kineticEnergy = newKineticEnergy;
-    m_position += deltaPosition;
-
-    return true;
+    m_kineticEnergy += deltaEnergy;
+    m_residualRange += deltaPosition;
 }
 
 } // namespace bf

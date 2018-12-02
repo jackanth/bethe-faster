@@ -15,8 +15,8 @@
 namespace bf
 {
 
-ObservedParticleState::ObservedParticleState(const double position, const double dEdx, const double dx) noexcept :
-    m_position{position},
+ObservedParticleState::ObservedParticleState(const double residualRange, const double dEdx, const double dx) noexcept :
+    m_residualRange{residualRange},
     m_dEdx{dEdx},
     m_dx{dx}
 {
@@ -25,12 +25,12 @@ ObservedParticleState::ObservedParticleState(const double position, const double
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-MassHypothesis::MassHypothesis(const double mass, std::vector<double> priorEnergyDistribution) :
+MassHypothesis::MassHypothesis(const double mass, std::vector<double> priorFinalEnergyDistribution) :
     m_mass{mass},
-    m_priorEnergyDistribution{std::move_if_noexcept(priorEnergyDistribution)}
+    m_priorFinalEnergyDistribution{std::move_if_noexcept(priorFinalEnergyDistribution)}
 {
-    if (m_priorEnergyDistribution.empty())
-        throw std::runtime_error{"Must provide a prior energy distribution"};
+    if (m_priorFinalEnergyDistribution.empty())
+        throw std::runtime_error{"Must provide a prior final energy distribution"};
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(const Particle::Histo
     ObservedStateVector observations;
 
     for (const std::shared_ptr<bf::ParticleState> &spState : history)
-        observations.emplace_back(spState->GetPosition(), spState->GetdEdx(), spState->Getdx());
+        observations.emplace_back(spState->GetResidualRange(), spState->GetdEdx(), spState->Getdx());
 
     return this->Filter(observations, spMassHypothesis);
 }
@@ -100,23 +100,14 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(
     if (observations.empty())
         throw std::runtime_error{"Cannot filter on an empty observation set"};
 
-    double currentPosition = observations.front().GetPosition() - m_options.m_stepSize;
+    double currentPosition = observations.front().GetResidualRange() - m_options.m_stepSize;
     this->CheckOptions(spMassHypothesis);
     this->CreateDistribution(spMassHypothesis, currentPosition);
 
     ObservedStateVector selectedObservations;
-    //const double maxPosition = observations.back().GetPosition();
 
-    for (const ObservedParticleState &observation : observations)
-    {
-        //if (observation.GetPosition() < maxPosition - 25.)
-        //    continue;
-
-        selectedObservations.push_back(observation);
-    }
-
-    const std::size_t maxObservations = std::min(selectedObservations.size(), m_options.m_maxUsedObservations);
-    const double      sampleRate      = static_cast<double>(selectedObservations.size()) / static_cast<double>(maxObservations);
+    const std::size_t maxObservations = std::min(observations.size(), m_options.m_maxUsedObservations);
+    const double      sampleRate      = static_cast<double>(observations.size()) / static_cast<double>(maxObservations);
 
     // Filter on the distribution
     DistributionHistory history;
@@ -125,10 +116,10 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(
     for (std::size_t i = 0UL; i < maxObservations; ++i)
     {
         const std::size_t            index       = static_cast<std::size_t>(std::round(sampleRate * static_cast<double>(i)));
-        const ObservedParticleState &observation = selectedObservations.at(index);
+        const ObservedParticleState &observation = observations.at(index);
 
         // Ensure observations are in order and there are no repeated positions
-        const double observedPosition = observation.GetPosition();
+        const double observedPosition = observation.GetResidualRange();
 
         if (!isFirstObservation && (observedPosition - currentPosition <= std::numeric_limits<double>::epsilon()))
             throw std::runtime_error{"Cannot filter on out-of-order or position-degenerate observations"};
@@ -146,13 +137,25 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(
         {
             // It's not terrible if there's a few extra hits at the end of a distribution - more than 10% would signify a real problem
             if (static_cast<float>(maxObservations - i) / static_cast<float>(maxObservations) > 0.1f)
-                history.emplace_back(std::make_shared<ParticleDistribution>(*m_spDistribution)); // deep copy of null distribution will mean a likelihood of 0
+            {
+                DistributionRecord distributionRecord;
+
+                for (const auto &weightParticlePair : *m_spDistribution)
+                    distributionRecord.emplace_back(weightParticlePair.first, weightParticlePair.second->KineticEnergy());
+
+                history.emplace_back(std::make_shared<DistributionRecord>(std::move(distributionRecord)));
+            }
 
             m_spDistribution->clear();
             return history;
         }
 
-        history.emplace_back(std::make_shared<ParticleDistribution>(*m_spDistribution)); // deep copy
+        DistributionRecord distributionRecord;
+
+        for (const auto &weightParticlePair : *m_spDistribution)
+            distributionRecord.emplace_back(weightParticlePair.first, weightParticlePair.second->KineticEnergy());
+
+        history.emplace_back(std::make_shared<DistributionRecord>(std::move(distributionRecord)));
         isFirstObservation = false;
     }
 
@@ -178,12 +181,12 @@ bool ParticleFilter::FilterOnObservation(const ObservedParticleState &observatio
     {
         const std::shared_ptr<Particle> spParticle = it->second;
 
-        if (spParticle->KineticEnergy() == 0.) // either the particle has truly stopped or there was an issue with its propagation
+        if (spParticle->HasFailed()) // there was an issue with its propagation
         {
             it->first = 0.;
             continue;
         }
-        
+    
         it->first = m_spPropagator->CalculateObservationProbability(spParticle, observation.GetdEdx(), observation.Getdx());
     }
 
@@ -215,8 +218,8 @@ void ParticleFilter::CheckOptions(const std::shared_ptr<MassHypothesis> &spMassH
     if (spMassHypothesis->Mass() < std::numeric_limits<double>::epsilon())
         throw std::runtime_error{"Particle mass must be positive and greater than epsilon"};
 
-    if (spMassHypothesis->PriorEnergyDistribution().size() != m_options.m_nParticles)
-        throw std::runtime_error{"The number of entries in the prior energy distirbution must match the number of filter particles"};
+    if (spMassHypothesis->PriorFinalEnergyDistribution().size() != m_options.m_nParticles)
+        throw std::runtime_error{"The number of entries in the prior energy distribution must match the number of filter particles"};
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -226,8 +229,11 @@ void ParticleFilter::CreateDistribution(const std::shared_ptr<MassHypothesis> &s
     m_spDistribution->clear();
     const double initialWeight = 1. / static_cast<double>(m_options.m_nParticles); // guaranteed to be ok by options check
 
-    for (const double energy : spMassHypothesis->PriorEnergyDistribution())
-        m_spDistribution->emplace_back(initialWeight, std::make_shared<Particle>(spMassHypothesis->Mass(), energy, initialPosition, false));
+    for (const double energy : spMassHypothesis->PriorFinalEnergyDistribution())
+    {
+        auto spParticle = std::shared_ptr<Particle>{new Particle{spMassHypothesis->Mass(), energy, initialPosition, false}};
+        m_spDistribution->emplace_back(initialWeight, std::move(spParticle));
+    }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -244,14 +250,14 @@ void ParticleFilter::PropagateParticles(const std::size_t nSteps) const
 
         try
         {
-            for (std::size_t i = 0UL; i < nSteps && spParticle->IsAlive(); ++i)
-                m_spPropagator->Propagate(spParticle, m_options.m_stepSize);
+            for (std::size_t i = 0UL; i < nSteps; ++i)
+                m_spPropagator->PropagateBackwards(spParticle, m_options.m_stepSize);
         }
 
         catch (std::runtime_error &err)
         {
             std::cerr << "Filter was forced to reject particle due to error: " << err.what() << std::endl;
-            spParticle->SetKineticEnergy(0.);
+            spParticle->HasFailed(true);
             continue;
         }
     }
@@ -296,25 +302,17 @@ double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &di
 
     double marginalLogLikelihood = 0.;
 
-    const double maxPosition = distributionHistory.back()->front().second->Position();
-
-    for (const std::shared_ptr<ParticleDistribution> &spDistribution : distributionHistory)
+    for (const std::shared_ptr<DistributionRecord> &spRecord : distributionHistory)
     {
-        if (spDistribution->empty())
+        if (spRecord->empty())
             throw std::runtime_error{"Distribution may not be empty"};
-
-        if (spDistribution->front().second->Position() < maxPosition - 25.)
-            continue;
-
-        // if (spDistribution->front().second->Position() > maxPosition - 5.)
-        //     continue;
 
         double avgWeight = 0.;
 
-        for (const auto &weightParticlePair : *spDistribution)
+        for (const auto &weightParticlePair : *spRecord)
             avgWeight += weightParticlePair.first;
 
-        avgWeight /= static_cast<double>(spDistribution->size());
+        avgWeight /= static_cast<double>(spRecord->size());
 
         if (avgWeight < std::numeric_limits<double>::epsilon())
             return std::numeric_limits<double>::lowest();
@@ -322,12 +320,6 @@ double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &di
         marginalLogLikelihood += std::log(avgWeight);
     }
 
-    const double finalEnergy = std::get<0UL>(ParticleFilter::CalculateFinalEnergy(distributionHistory));
-
-    if (std::isnan(finalEnergy) || std::isinf(finalEnergy))
-        return std::numeric_limits<double>::lowest();
-
-    marginalLogLikelihood += std::log(ROOT::Math::normal_pdf(finalEnergy, 5.));
     return marginalLogLikelihood;
 }
 
@@ -341,7 +333,7 @@ std::tuple<double, double> ParticleFilter::CalculateFinalEnergy(const Distributi
 
     for (const auto &weightParticlePair : *distributionHistory.back())
     {
-        weightedEnergy += weightParticlePair.first * weightParticlePair.second->KineticEnergy();
+        weightedEnergy += weightParticlePair.first * weightParticlePair.second;
         totalWeight += weightParticlePair.first;
     }
 
@@ -351,7 +343,7 @@ std::tuple<double, double> ParticleFilter::CalculateFinalEnergy(const Distributi
     double weightedSquaredEnergy = 0.;
 
     for (const auto &weightParticlePair : *distributionHistory.back())
-        weightedSquaredEnergy += weightParticlePair.first * weightParticlePair.second->KineticEnergy() * weightParticlePair.second->KineticEnergy();
+        weightedSquaredEnergy += weightParticlePair.first * weightParticlePair.second * weightParticlePair.second;
 
     const double denominator = (totalWeight - 1.f > std::numeric_limits<double>::epsilon()) ? totalWeight * (totalWeight - 1.f) : totalWeight * totalWeight;
     const double stdev = std::sqrt((totalWeight * weightedSquaredEnergy - weightedEnergy * weightedEnergy) / denominator);
@@ -366,7 +358,7 @@ double ParticleFilter::CalculatePida(const Particle::History &history)
     ObservedStateVector observations;
 
     for (const std::shared_ptr<bf::ParticleState> &spState : history)
-        observations.emplace_back(spState->GetPosition(), spState->GetdEdx(), spState->Getdx());
+        observations.emplace_back(spState->GetResidualRange(), spState->GetdEdx(), spState->Getdx());
 
     return ParticleFilter::CalculatePida(observations);
 }
@@ -376,20 +368,21 @@ double ParticleFilter::CalculatePida(const Particle::History &history)
 double ParticleFilter::CalculatePida(const ObservedStateVector &observations)
 {
     double pida = 0.;
-
-    const double maxPosition = observations.back().GetPosition();
-    ObservedStateVector selectedObservations;
+    std::size_t nObservations = 0UL;
 
     for (const ObservedParticleState &observation : observations)
     {
-        if (observation.GetPosition() > maxPosition - 20.f)
-            selectedObservations.push_back(observation);
+        if (observation.GetResidualRange() > 20.f)
+            continue;
+            
+        pida += -observation.GetdEdx() * std::pow(observation.GetResidualRange(), 0.42);
+        ++nObservations;
     }
 
-    for (const ObservedParticleState &observation : selectedObservations)
-        pida += -observation.GetdEdx() * std::pow(maxPosition - observation.GetPosition(), 0.42);
-    
-    return pida / static_cast<double>(selectedObservations.size());
+    if (nObservations == 0UL)
+        throw std::runtime_error{"Could not calculate PIDA because there were no observations near the end of the track"};
+
+    return pida / static_cast<double>(nObservations);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

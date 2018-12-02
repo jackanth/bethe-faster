@@ -5,6 +5,7 @@
  *
  *  $Log: $
  */
+
 #ifndef BF_PROPAGATOR_H
 #define BF_PROPAGATOR_H 1
 
@@ -12,8 +13,9 @@
 #include "Particle.h"
 #include "ParticleHelper.h"
 
-#include "Math/Random.h"
 #include "Math/GSLRndmEngines.h"
+#include "Math/Random.h"
+#include "Math/VavilovFast.h"
 
 #include <iostream>
 #include <map>
@@ -42,35 +44,14 @@ public:
     explicit Propagator(Detector detector);
 
     /**
-     *  @brief  Destructor
-     */
-    ~Propagator();
-
-    /**
-     *  @brief  Propagate a particle
+     *  @brief  Propagate a single step particle backwards
      *
      *  @param  spParticle shared pointer to the particle
-     *  @param  deltaX the effective thickness
+     *  @param  stepSize the step size
      *
      *  @return the dE/dx value
      */
-    double Propagate(const std::shared_ptr<Particle> &spParticle, const double deltaX) const;
-
-    /**
-     *  @brief  Propagate a set of particles until they have all stopped
-     *
-     *  @param  deltaX the effective thickness
-     *  @param  particleSet the set of particles
-     */
-    void PropagateUntilStopped(const double deltaX, const ParticleHelper::ParticleSet &particleSet) const;
-
-    /**
-     *  @brief  Propagate a particle until it stops
-     *
-     *  @param  deltaX the effective thickness
-     *  @param  spParticle shared pointer to the particle
-     */
-    void PropagateUntilStopped(const double deltaX, const std::shared_ptr<Particle> &spParticle) const;
+    double PropagateBackwards(const std::shared_ptr<Particle> &spParticle, const double stepSize) const;
 
     /**
      *  @brief  Calculate Vavilov's kappa
@@ -109,7 +90,7 @@ protected:
 
     /**
      *  @brief  Sample from the Vavilov distribution
-     * 
+     *
      *  @param  kappa the kappa value
      *  @param  beta2 the beta^2 value
      *  @param  maxError the maximum error
@@ -117,7 +98,8 @@ protected:
      *
      *  @return the sample
      */
-    double SampleFromVavilovDistribution(const double kappa, const double beta2, const double maxError = 0.01, const std::size_t maxIterations = 10000UL) const;
+    double SampleFromVavilovDistribution(
+        const double kappa, const double beta2, const double maxError = 0.01, const std::size_t maxIterations = 10000UL) const;
 
     /**
      *  @brief  Get the Vavilov probability density
@@ -133,10 +115,10 @@ protected:
     friend class ParticleFilter;
 
 private:
-    Detector                       m_detector;               ///< The detector parameters
-    double                         m_cBar;                   ///< The value of cBar
-    double                         m_xiPartial;              ///< The value of partial xi
-    ROOT::Math::Random<ROOT::Math::GSLRngMT> *                      m_pRandom;                ///< Address of a ROOT TRandom object
+    Detector                                         m_detector;  ///< The detector parameters
+    double                                           m_cBar;      ///< The value of cBar
+    double                                           m_xiPartial; ///< The value of partial xi
+    mutable ROOT::Math::Random<ROOT::Math::GSLRngMT> m_randomGen; ///< A random number generator
 
     /**
      *  @brief  Get the xi value
@@ -195,22 +177,6 @@ private:
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline void Propagator::PropagateUntilStopped(const double deltaX, const ParticleHelper::ParticleSet &particleSet) const
-{
-    for (const std::shared_ptr<Particle> &spParticle : particleSet)
-        this->PropagateUntilStopped(deltaX, spParticle);
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-inline void Propagator::PropagateUntilStopped(const double deltaX, const std::shared_ptr<Particle> &spParticle) const
-{
-    while (spParticle->IsAlive())
-        this->Propagate(spParticle, deltaX);
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
 inline double Propagator::Xi(const double beta2, const double deltaX) const
 {
     if (beta2 < std::numeric_limits<double>::epsilon())
@@ -225,6 +191,20 @@ inline double Propagator::CalculateKappa(const double mass, const double energy,
 {
     const double beta = ParticleHelper::GetParticleBeta(mass, energy);
     return this->Xi(beta * beta, deltaX) / this->GetMaxEnergyTransfer(beta, mass);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Propagator::CalculateObservationProbability(const std::shared_ptr<Particle> &spParticle, const double observeddEdx, const double observeddx) const
+{
+    return this->CalculateTransitionProbability(observeddEdx * observeddx, spParticle->Mass(), spParticle->KineticEnergy(), observeddx);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Propagator::GetVavilovProbabilityDensity(const double kappa, const double beta2, const double lambda) const
+{
+    return ROOT::Math::VavilovFast{kappa, beta2}.Pdf(lambda);
 }
 
 } // namespace bf

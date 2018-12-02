@@ -9,7 +9,6 @@
 #include "Propagator.h"
 #include "PhysicalConstants.h"
 
-#include "Math/VavilovFast.h"
 #include "Math/DistFunc.h"
 
 #include <cmath>
@@ -24,7 +23,7 @@ Propagator::Propagator(Detector detector) :
     m_detector(std::move_if_noexcept(detector)),
     m_cBar(0.),
     m_xiPartial(0.),
-    m_pRandom(nullptr)
+    m_randomGen(static_cast<std::uint32_t>(std::time(nullptr)))
 {
     if (m_detector.m_plasmaEnergy < std::numeric_limits<double>::epsilon())
         throw std::runtime_error("Could not initialize detector because plasma energy value was too small");
@@ -36,57 +35,28 @@ Propagator::Propagator(Detector detector) :
 
     m_xiPartial = PhysicalConstants::m_kCoefficient * static_cast<double>(m_detector.m_atomicNumber) *
                   m_detector.m_density / (2. * m_detector.m_atomicMass);
-
-    // Set up the random number generators
-    m_pRandom = new ROOT::Math::Random<ROOT::Math::GSLRngMT>(static_cast<std::uint32_t>(std::time(nullptr)));
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-Propagator::~Propagator()
-{
-    if (m_pRandom)
-        delete m_pRandom;
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-double Propagator::Propagate(const std::shared_ptr<Particle> &spParticle, const double deltaX) const
+double Propagator::PropagateBackwards(const std::shared_ptr<Particle> &spParticle, const double stepSize) const
 {  
-    if (!spParticle->IsAlive())
-        return 0.f;
-
     const double beta  = ParticleHelper::GetParticleBeta(spParticle);
     const double beta2 = beta * beta;
 
-    const double xi = this->Xi(beta2, deltaX);
+    const double xi = this->Xi(beta2, stepSize);
     const double maxEnergyTransfer = this->GetMaxEnergyTransfer(beta, spParticle->Mass());
     const double expectedLoss      = this->GetExpectedEnergyLoss(beta, beta2, xi, maxEnergyTransfer);
 
     if (expectedLoss < 0.f) // the particle is too slow so our model has broken down
-    {
-        spParticle->Kill();
-        return 0.f;
-    }
+        throw std::runtime_error{"Failed to propagate particle; its final energy was probably too small"};
     
     const double kappa             = xi / maxEnergyTransfer;
     const double actualLoss = this->SampleDeltaE(expectedLoss, kappa, beta2, xi);
     const double deltaE = std::min(-actualLoss, 0.); // particle may not gain energy
+    spParticle->Increment(stepSize, -deltaE);
 
-    if (!spParticle->Increment(deltaX, deltaE))
-    {
-        spParticle->Kill();
-        return 0.f;
-    }
-
-    return deltaE / deltaX;
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-double Propagator::CalculateObservationProbability(const std::shared_ptr<Particle> &spParticle, const double observeddEdx, const double observeddx) const
-{
-    return this->CalculateTransitionProbability(observeddEdx * observeddx, spParticle->Mass(), spParticle->KineticEnergy(), observeddx);
+    return deltaE / stepSize;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -116,11 +86,11 @@ double Propagator::CalculateTransitionProbability(const double deltaE, const dou
     if (previousKappa > 0.01) // Vavilov
         return this->GetVavilovProbabilityDensity(previousKappa, previousBeta2, lambda);
 
-    //   const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - previousBeta2 - std::log(previousKappa);
-    //   const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
+    const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - previousBeta2 - std::log(previousKappa);
+    const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
 
-   // if (lambda > lambdaMax)
-   //     return 0.f;
+   if (lambda > lambdaMax)
+       return 0.f;
 
     // kappa < 0.01; Landau approximation
     return ROOT::Math::landau_pdf(lambda); // / (1. - ROOT::Math::landau_cdf_c(lambdaMax));
@@ -157,19 +127,19 @@ double Propagator::SampleDeltaE(const double meanEnergyLoss, const double kappa,
     if (kappa > 10.) // Gaussian approximation
     {
         const double sigma = xi * std::sqrt((1. - 0.5 * beta2) / kappa);
-        return m_pRandom->Gaus(meanEnergyLoss, sigma);
+        return m_randomGen.Gaus(meanEnergyLoss, sigma);
     }
 
     if (kappa > 0.01) // Vavilov
         return meanEnergyLoss + xi * (this->SampleFromVavilovDistribution(kappa, beta2) + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
 
     // kappa < 0.01; Landau approximation
-    // const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - beta2 - std::log(kappa);
-    // const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
+    const double lambdaBar = -(1. - PhysicalConstants::m_eulerConstant) - beta2 - std::log(kappa);
+    const double lambdaMax = 0.60715 + 1.1934 * lambdaBar + (0.67794 + 0.052382 * lambdaBar) * std::exp(0.94753 + 0.74442 * lambdaBar);
 
-    double lambda = m_pRandom->Landau(); //0.f;
+    double lambda = 0.f;
 
-  //  do lambda = ); while (lambda > lambdaMax);
+    do lambda = m_randomGen.Landau(); while (lambda > lambdaMax);
 
     // Note that the Landau mode is at approximately -0.22278
     return meanEnergyLoss + xi * (lambda + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
@@ -208,7 +178,7 @@ double Propagator::SampleFromVavilovDistribution(const double kappa, const doubl
     double lambda     = vavilovDist.Mode();
     double error      = 1.;
     std::size_t count = 0UL;
-    double uniformSample = m_pRandom->Uniform(0., 1.);
+    double uniformSample = m_randomGen.Uniform(0., 1.);
 
     while ((std::abs(error) > maxError) && (count++ < maxIterations))
     {
@@ -217,7 +187,7 @@ double Propagator::SampleFromVavilovDistribution(const double kappa, const doubl
 
         if (pdf < std::numeric_limits<double>::epsilon())
         {
-            uniformSample = m_pRandom->Uniform(0., 1.);
+            uniformSample = m_randomGen.Uniform(0., 1.);
             lambda        = vavilovDist.Mode();
             error         = 1.;
             continue;
@@ -228,14 +198,6 @@ double Propagator::SampleFromVavilovDistribution(const double kappa, const doubl
     }
 
     return lambda;
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-double Propagator::GetVavilovProbabilityDensity(const double kappa, const double beta2, const double lambda) const
-{
-    const auto vavilovDist = ROOT::Math::VavilovFast{kappa, beta2};
-    return vavilovDist.Pdf(lambda);
 }
 
 } // namespace bf
