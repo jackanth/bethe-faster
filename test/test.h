@@ -12,6 +12,19 @@
 #include "BetheFaster.h"
 
 /**
+ *  @brief  Some plotting options
+ */
+struct PlotOptions
+{
+    bool         m_isLine;     ///< Whether it is a line graph
+    std::int16_t m_style;      ///< The style number (line width or marker style)
+    std::string  m_fileName;   ///< The file name
+    std::string  m_xAxisTitle; ///< The x-axis title
+    std::string  m_yAxisTitle; ///< The y-axis title
+    bool         m_yLogScale;  ///< Whether y has a log scale
+};
+
+/**
  *  @brief  Test the generation step
  *
  *  @param  detector the detector
@@ -49,5 +62,16 @@ void TestFiltering(const bf::Detector &detector);
  */
 void FilterOnParticle(const bf::Detector &detector, const bf::Propagator &propagator, const bf::ParticleHelper::PARTICLE_TYPE type,
     const std::shared_ptr<bf::Particle> &spParticle, const double deltaX, const double maxEnergy);
+
+/**
+ *  @brief  Create and save a TMultiGraph
+ *
+ *  @param  muonGraph the muon graph
+ *  @param  chargedPionGraph the charged pion graph
+ *  @param  chargedKaonGraph the charged kaon graph
+ *  @param  protonGraph the proton graph
+ *  @param  options the plotting options
+ */
+void WriteMultiGraph(TGraph &muonGraph, TGraph &chargedPionGraph, TGraph &chargedKaonGraph, TGraph &protonGraph, const PlotOptions &options);
 
 #endif // #ifndef BF_TEST_H
