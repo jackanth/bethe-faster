@@ -36,17 +36,6 @@ MassHypothesis::MassHypothesis(const double mass, std::vector<double> priorFinal
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-
-MassHypothesis::MassHypothesis(const double mass, const double finalEnergy, const std::size_t numberOfParticles) :
-    m_mass{mass},
-    m_priorFinalEnergyDistribution(numberOfParticles, finalEnergy),
-    m_numberOfParticles{numberOfParticles}
-{
-    if (m_numberOfParticles == 0UL)
-        throw std::runtime_error{"Must provide at least one particle"};
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 ParticleFilter::ParticleFilter(Detector detector) :
@@ -80,8 +69,7 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(ObservedStateVector o
     std::sort(observations.begin(), observations.end(),
         [](const auto lhs, const auto rhs) { return lhs.GetResidualRange() < rhs.GetResidualRange(); });
 
-    const double stepSize        = this->GetMedianStepSize(observations);
-    double       currentPosition = observations.front().GetResidualRange() - stepSize;
+    double       currentPosition = observations.front().GetResidualRange() - observations.front().Getdx();
     this->CreateDistribution(massHypothesis, currentPosition);
 
     // Set up the sampling vectors
@@ -108,12 +96,12 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(ObservedStateVector o
 
         while (observedPosition - currentPosition > std::numeric_limits<double>::epsilon())
         {
-            currentPosition += stepSize;
+            currentPosition += observation.Getdx();
             ++nSteps;
         }
 
         if (!this->FilterOnObservation(observation, isFirstObservation, nSteps, spResamplingProbabilityVector, spResamplingParticleVector,
-                numParticles, stepSize)) // all the particles finished or were too unlikely
+                numParticles)) // all the particles finished or were too unlikely
         {
             // It's not terrible if there's a few extra hits at the end of a distribution - more than 10% would signify a real problem
             if (static_cast<float>(maxObservations - i) / static_cast<float>(maxObservations) > 0.1f)
@@ -147,14 +135,14 @@ ParticleFilter::DistributionHistory ParticleFilter::Filter(ObservedStateVector o
 
 bool ParticleFilter::FilterOnObservation(const ObservedParticleState &observation, const bool isFirstObservation, const std::size_t nSteps,
     const std::shared_ptr<std::vector<double>> &      spResamplingProbabilityVector,
-    const std::shared_ptr<std::vector<unsigned int>> &spResamplingParticleVector, const std::size_t numParticles, const double stepSize) const
+    const std::shared_ptr<std::vector<unsigned int>> &spResamplingParticleVector, const std::size_t numParticles) const
 {
     if (!isFirstObservation)
     {
         if (this->EffectiveSampleSize() < static_cast<double>(numParticles) / 2.)
             this->ResampleDistribution(spResamplingProbabilityVector, spResamplingParticleVector);
 
-        this->PropagateParticles(nSteps, stepSize);
+        this->PropagateParticles(nSteps, observation.Getdx());
     }
 
 // Calculate the new particle weights
@@ -232,9 +220,6 @@ void ParticleFilter::PropagateParticles(const std::size_t nSteps, const double s
     {
         const std::shared_ptr<Particle> &spParticle = it->second;
 
-        if (spParticle->KineticEnergy() == 0.)
-            continue;
-
         try
         {
             for (std::size_t i = 0UL; i < nSteps; ++i)
@@ -284,11 +269,12 @@ void ParticleFilter::ResampleDistribution(const std::shared_ptr<std::vector<doub
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &distributionHistory)
+std::vector<double> ParticleFilter::GetMarginalLikelihoodHistory(const DistributionHistory &distributionHistory)
 {
     if (distributionHistory.empty())
         throw std::runtime_error{"Distribution history may not be empty"};
 
+    std::vector<double> likelihoodHistory;
     double marginalLogLikelihood = 0.;
 
     for (const std::shared_ptr<DistributionRecord> &spRecord : distributionHistory)
@@ -304,12 +290,16 @@ double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &di
         avgWeight /= static_cast<double>(spRecord->size());
 
         if (avgWeight < std::numeric_limits<double>::epsilon())
-            return std::numeric_limits<double>::lowest();
+        {
+            likelihoodHistory.push_back(std::numeric_limits<double>::lowest());
+            break;
+        }
 
         marginalLogLikelihood += std::log(avgWeight);
+        likelihoodHistory.push_back(marginalLogLikelihood);
     }
 
-    return marginalLogLikelihood;
+    return likelihoodHistory;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -391,18 +381,4 @@ double ParticleFilter::EffectiveSampleSize() const
     return summedWeights * summedWeights / summedSquaredWeights;
 }
 
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-double ParticleFilter::GetMedianStepSize(ObservedStateVector observations) const
-{
-    const std::size_t nObservations = observations.size();
-    assert(nObservations > 0UL);
-
-    std::sort(observations.begin(), observations.end(), [](const auto lhs, const auto rhs) { return lhs.Getdx() < rhs.Getdx(); });
-
-    if (nObservations % 2UL == 0UL)
-        return observations.at((nObservations / 2UL) + 1UL).Getdx();
-
-    return (observations.at(nObservations / 2UL).Getdx() + observations.at(nObservations / 2UL + 1UL).Getdx()) / 2.;
-}
 } // namespace bf

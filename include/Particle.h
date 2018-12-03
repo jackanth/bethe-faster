@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <vector>
+#include <cmath>
 
 namespace bf
 {
@@ -107,6 +108,20 @@ public:
     const History &GetHistory() const;
 
     /**
+     *  @brief  Get the minimum allowed kinetic energy
+     *
+     *  @return the minimum kinetic energy
+     */
+    double MinKineticEnergy() const noexcept;
+
+    /**
+     *  @brief  Get the maximum allowed kinetic energy
+     *
+     *  @return the maximum kinetic energy
+     */
+    double MaxKineticEnergy() const noexcept;
+
+    /**
      *  @brief  Get the current kinetic energy (MeV)
      *
      *  @return the current kinetic energy
@@ -170,14 +185,26 @@ protected:
     friend class ParticleHelper;
 
 private:
-    double  m_finalKineticEnergy; ///< The final kinetic energy
-    double  m_finalResidualRange; ///< The final residual range
+    double  m_minKineticEnergy;   ///< The minimum allowed energy (MeV)
+    double  m_maxKineticEnergy;   ///< The maximum allowed energy (MeV)
+    double  m_finalKineticEnergy; ///< The final kinetic energy (MeV)
+    double  m_finalResidualRange; ///< The final residual range (cm)
     double  m_mass;               ///< The particle mass (MeV)
     double  m_kineticEnergy;      ///< The kinetic energy (MeV)
     double  m_residualRange;      ///< The current residual range (cm)
     History m_history;            ///< The particle history
     bool    m_recordHistory;      ///< Whether to record the particle history
     bool    m_hasFailed;          ///< Whether the particle has failed in its propagation
+
+    /**
+     *  @brief  Calculate a particle's kinetic energy from its beta*gamma value
+     *
+     *  @param  mass the particle's mass
+     *  @param  betaGamma the beta*gamma value
+     *
+     *  @return the kinetic energy
+     */
+    double CalculateEnergyFromBetaGamma(const double mass, const double betaGamma) const;
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -229,6 +256,20 @@ inline const Particle::History &Particle::GetHistory() const
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+inline double Particle::MinKineticEnergy() const noexcept
+{
+    return m_minKineticEnergy;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Particle::MaxKineticEnergy() const noexcept
+{
+    return m_maxKineticEnergy;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 inline double Particle::KineticEnergy() const noexcept
 {
     return m_kineticEnergy;
@@ -260,6 +301,13 @@ inline void Particle::SetKineticEnergy(const double kineticEnergy) noexcept
 inline void Particle::HasFailed(const bool hasFailed) noexcept
 {
     m_hasFailed = hasFailed;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Particle::CalculateEnergyFromBetaGamma(const double mass, const double betaGamma) const
+{
+    return mass * (std::sqrt(1. + betaGamma * betaGamma) - 1.);
 }
 
 } // namespace bf

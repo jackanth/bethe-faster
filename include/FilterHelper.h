@@ -32,11 +32,10 @@ public:
      *  @param nParticles the number of particles
      *  @param mean the mean energy (MeV)
      *  @param sigma the standard deviation of the energy (MeV)
-     *  @param min the minimum energy (MeV)
      *
      *  @return the energy distribution
      */
-    static std::vector<double> GetGaussianEnergyDistribution(const std::size_t nParticles, const double mean, const double sigma, const double min);
+    static std::vector<double> GetGaussianEnergyDistribution(const std::size_t nParticles, const double mean, const double sigma);
 
     /**
      *  @brief  Get a uniform energy distribution in MeV

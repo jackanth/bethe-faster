@@ -16,7 +16,7 @@
 namespace bf
 {
 
-std::vector<double> FilterHelper::GetGaussianEnergyDistribution(const std::size_t nParticles, const double mean, const double sigma, const double min)
+std::vector<double> FilterHelper::GetGaussianEnergyDistribution(const std::size_t nParticles, const double mean, const double sigma)
 {
     std::vector<double> distribution;
     auto                generator = ROOT::Math::Random<ROOT::Math::GSLRngMT>{static_cast<std::uint32_t>(std::time(nullptr))};
@@ -25,7 +25,7 @@ std::vector<double> FilterHelper::GetGaussianEnergyDistribution(const std::size_
     {
         const double data = generator.Gaus(mean, sigma);
 
-        if (data > min)
+        if (data > std::numeric_limits<double>::epsilon())
             distribution.push_back(data);
     }
 
@@ -54,8 +54,8 @@ std::vector<double> FilterHelper::GetUniformEnergyDistribution(const std::size_t
 
 std::vector<double> FilterHelper::GetPerfectlyUniformEnergyDistribution(const std::size_t nParticles, const double min, const double max)
 {
-    if (min < std::numeric_limits<double>::epsilon())
-        throw std::runtime_error{"Lowest energy bound must be larger than epsilon"};
+    if (min < -std::numeric_limits<double>::epsilon())
+        throw std::runtime_error{"Lowest energy bound must be larger than -epsilon"};
 
     if (nParticles < 2UL)
         throw std::runtime_error{"There must be at least two particles"};

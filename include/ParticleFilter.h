@@ -78,15 +78,6 @@ public:
     MassHypothesis(const double mass, std::vector<double> priorFinalEnergyDistribution);
 
     /**
-     *  @brief  Constructor
-     *
-     *  @param  mass the mass
-     *  @param  finalEnergy the final energy
-     *  @param  numberOfParticles the number of particles
-     */
-    MassHypothesis(const double mass, const double finalEnergy, const std::size_t numberOfParticles = 1000UL);
-
-    /**
      *  @brief  Get the mass
      *
      *  @return the mass
@@ -164,6 +155,15 @@ public:
     static double CalculateMarginalLikelihood(const DistributionHistory &distributionHistory);
 
     /**
+     *  @brief  Calculate the marginal likelihood history, given a distribution history
+     *
+     *  @param  distributionHistory the distribution history
+     *
+     *  @return the marginal likelihood hitory
+     */
+    static std::vector<double> GetMarginalLikelihoodHistory(const DistributionHistory &distributionHistory);
+
+    /**
      *  @brief  Calculate the final energy mean and standard deviation, given a distribution history
      *
      *  @param  distributionHistory the distribution history
@@ -204,11 +204,10 @@ private:
      *  @param  spResamplingProbabilityVector shared pointer to the resampling probability vector
      *  @param  spResamplingParticleVector shared pointer to the resampling particle vector
      *  @param  numParticles the number of particles
-     *  @param  stepSize the step size
      */
     bool FilterOnObservation(const ObservedParticleState &observation, const bool isFirstObservation, const std::size_t nSteps,
         const std::shared_ptr<std::vector<double>> &spResamplingProbabilityVector,
-        const std::shared_ptr<std::vector<unsigned int>> &spResamplingParticleVector, const std::size_t numParticles, const double stepSize) const;
+        const std::shared_ptr<std::vector<unsigned int>> &spResamplingParticleVector, const std::size_t numParticles) const;
 
     /**
      *  @brief  Check the distribution weights
@@ -255,15 +254,6 @@ private:
      *  @return the effective sample size
      */
     double EffectiveSampleSize() const;
-
-    /**
-     *  @brief  Get the median step size
-     *
-     *  @param  observations the observations
-     *
-     *  @return the median step size
-     */
-    double GetMedianStepSize(ObservedStateVector observations) const;
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -308,6 +298,13 @@ inline std::size_t MassHypothesis::NumberOfParticles() const noexcept
 inline const std::vector<double> &MassHypothesis::PriorFinalEnergyDistribution() const noexcept
 {
     return m_priorFinalEnergyDistribution;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double ParticleFilter::CalculateMarginalLikelihood(const DistributionHistory &distributionHistory)
+{
+    return ParticleFilter::GetMarginalLikelihoodHistory(distributionHistory).back();
 }
 
 } // namespace bf

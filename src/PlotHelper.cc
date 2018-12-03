@@ -385,6 +385,48 @@ TCanvas *PlotHelper::PlotParticleKappaVersusTMarkers(
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
+TGraph PlotHelper::GetParticleLikelihoodHistoryGraph(const ParticleFilter::DistributionHistory &distributionHistory)
+{
+    const auto likelihoodHistory = ParticleFilter::GetMarginalLikelihoodHistory(distributionHistory);
+
+    if (likelihoodHistory.empty())
+        throw std::runtime_error{"Cannot plot empty particle likelihood history"};
+
+    std::vector<double> observationNumber, likelihoods;
+    std::size_t observationCount = 0UL;
+
+    for (const auto &likelihood : likelihoodHistory)
+    {
+        if (std::abs(likelihood - std::numeric_limits<double>::lowest()) <= std::numeric_limits<double>::epsilon())
+            break;
+            
+        observationNumber.push_back(static_cast<double>(observationCount++));
+        likelihoods.push_back(likelihood);
+    }
+
+    return TGraph{static_cast<Int_t>(observationNumber.size()), observationNumber.data(), likelihoods.data()};
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+TCanvas *PlotHelper::PlotParticleLikelihoodHistory(const ParticleFilter::DistributionHistory &distributionHistory, const unsigned int colour, const std::int16_t lineWidth)
+{
+    const auto     canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
+    TCanvas *const pCanvas    = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
+    TGraph         graph      = PlotHelper::GetParticleLikelihoodHistoryGraph(distributionHistory);
+
+    // Formatting
+    graph.GetYaxis()->SetTitle("\\text{log-likelihood}");
+    graph.GetXaxis()->SetTitle("\\text{Observation number}");
+    graph.SetLineColor(PlotHelper::GetSchemeColour(colour));
+    graph.SetLineWidth(lineWidth);
+
+    graph.DrawClone("AL");
+    return pCanvas;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
 void PlotHelper::Pause()
 {
     std::cout << "Press return to continue..." << std::endl;

@@ -41,46 +41,59 @@ Propagator::Propagator(Detector detector) :
 
 double Propagator::PropagateBackwards(const std::shared_ptr<Particle> &spParticle, const double stepSize, const PROPAGATION_MODE mode) const
 {
-    const double beta  = ParticleHelper::GetParticleBeta(spParticle);
-    const double beta2 = beta * beta;
-
-    const double xi                = this->Xi(beta2, stepSize);
-    const double maxEnergyTransfer = this->GetMaxEnergyTransfer(beta, spParticle->Mass());
-    const double expectedLoss      = this->GetExpectedEnergyLoss(beta, beta2, xi, maxEnergyTransfer);
-
-    if (expectedLoss < 0.f) // the particle is too slow so our model has broken down
-        throw std::runtime_error{"Failed to propagate particle; its final energy was probably too small"};
-
-    double deltaE = 0.;
-
-    switch (mode)
+    while (true)
     {
-        case PROPAGATION_MODE::STOCHASTIC:
+        const double beta  = ParticleHelper::GetParticleBeta(spParticle);
+        const double beta2 = beta * beta;
+
+        if (beta2 <= std::numeric_limits<double>::epsilon())
         {
-            const double kappa      = xi / maxEnergyTransfer;
-            const double actualLoss = this->SampleDeltaE(expectedLoss, kappa, beta2, xi);
-            deltaE                  = std::min(-actualLoss, 0.); // particle may not gain energy
-            break;
+            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 0.1);
+            continue;
         }
 
-        case PROPAGATION_MODE::MEAN:
-            deltaE = -expectedLoss;
-            break;
+        const double xi                = this->Xi(beta2, stepSize);
+        const double maxEnergyTransfer = this->GetMaxEnergyTransfer(beta, spParticle->Mass());
+        const double expectedLoss      = this->GetExpectedEnergyLoss(beta, beta2, xi, maxEnergyTransfer);
 
-        case PROPAGATION_MODE::MODAL:
+        if (expectedLoss < 0.f) // the particle is too slow so our model has broken down
         {
-            const double kappa = xi / maxEnergyTransfer;
-            deltaE             = -this->GetDeltaEMode(expectedLoss, kappa, beta2, xi);
-            break;
+            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 1.);
+            continue;
         }
 
-        default:
+        double deltaE = 0.;
 
-            throw std::runtime_error{"Unknown propagation mode"};
-    }
+        switch (mode)
+        {
+            case PROPAGATION_MODE::STOCHASTIC:
+            {
+                const double kappa      = xi / maxEnergyTransfer;
+                const double actualLoss = this->SampleDeltaE(expectedLoss, kappa, beta2, xi);
+                deltaE                  = std::min(-actualLoss, 0.); // particle may not gain energy
+                break;
+            }
 
-    spParticle->Increment(stepSize, -deltaE);
-    return deltaE / stepSize;
+            case PROPAGATION_MODE::MEAN:
+                deltaE = -expectedLoss;
+                break;
+
+            case PROPAGATION_MODE::MODAL:
+            {
+                const double kappa = xi / maxEnergyTransfer;
+                deltaE             = -this->GetDeltaEMode(expectedLoss, kappa, beta2, xi);
+                break;
+            }
+
+            default:
+                throw std::runtime_error{"Unknown propagation mode"};
+        }
+
+        spParticle->Increment(stepSize, -deltaE);
+        return deltaE / stepSize;
+   }
+
+    assert(false); // unreachable
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

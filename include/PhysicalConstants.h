@@ -22,15 +22,17 @@ struct PhysicalConstants
      */
     PhysicalConstants() = delete;
 
-    static constexpr double m_kCoefficient    = 0.307075;      ///< dE/dx coefficient (value from PDG) (MeV mol-1 cm^2)
-    static constexpr double m_eulerConstant   = 0.5772156649;  ///< no units
-    static constexpr double m_electronMass    = 0.5109989461;  ///< MeV
-    static constexpr double m_muonMass        = 105.6583745;   ///< MeV
-    static constexpr double m_protonMass      = 938.2720813;   ///< MeV
-    static constexpr double m_chargedPionMass = 139.57018;     ///< MeV
-    static constexpr double m_chargedKaonMass = 493.677;       ///< MeV
-    static constexpr double m_landauMode      = -0.22278;      ///< no units
-    static constexpr double m_ln10            = 2.30258509299; ///< no units
+    static constexpr double m_kCoefficient      = 0.307075;      ///< dE/dx coefficient (value from PDG) (MeV mol-1 cm^2)
+    static constexpr double m_eulerConstant     = 0.5772156649;  ///< no units
+    static constexpr double m_electronMass      = 0.5109989461;  ///< MeV
+    static constexpr double m_muonMass          = 105.6583745;   ///< MeV
+    static constexpr double m_protonMass        = 938.2720813;   ///< MeV
+    static constexpr double m_chargedPionMass   = 139.57018;     ///< MeV
+    static constexpr double m_chargedKaonMass   = 493.677;       ///< MeV
+    static constexpr double m_landauMode        = -0.22278;      ///< no units
+    static constexpr double m_ln10              = 2.30258509299; ///< no units
+    static constexpr double m_betheMinBetaGamma = 0.1;           ///< no units
+    static constexpr double m_betheMaxBetaGamma = 1000.;         ///< no units
 };
 
 } // namespace bf

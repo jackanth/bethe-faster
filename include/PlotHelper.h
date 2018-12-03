@@ -11,6 +11,7 @@
 
 #include "Particle.h"
 #include "Propagator.h"
+#include "ParticleFilter.h"
 
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -199,7 +200,7 @@ public:
     static TGraph GetParticleKappaVersusTGraph(const Propagator &propagator, const std::shared_ptr<Particle> &spParticle);
 
     /**
-     *  @brief  Plot a particle's kappa versus Tusing a line with some default settings
+     *  @brief  Plot a particle's kappa versus T using a line with some default settings
      *
      *  @param  propagator the propagator
      *  @param  spParticle shared pointer to the particle
@@ -223,6 +224,27 @@ public:
      */
     static TCanvas *PlotParticleKappaVersusTMarkers(const Propagator &propagator, const std::shared_ptr<Particle> &spParticle,
         const unsigned int colour = 0UL, const std::int16_t markerStyle = 6);
+
+    /**
+     *  @brief  Get a particle likelihood history graph
+     *
+     *  @param  distributionHistory the distribution history
+     *
+     *  @return the graph
+     */
+    static TGraph GetParticleLikelihoodHistoryGraph(const ParticleFilter::DistributionHistory &distributionHistory);
+
+    /**
+     *  @brief  Plot a particle's likelihood history with some default settings
+     *
+     *  @param  distributionHistory the distribution history
+     *  @param  colour the line colour
+     *  @param  lineWidth the line width
+     *
+     *  @return address of the TCanvas object
+     */
+    static TCanvas *PlotParticleLikelihoodHistory(const ParticleFilter::DistributionHistory &distributionHistory,
+        const unsigned int colour = 0UL, const std::int16_t lineWidth = 2);
 
     /**
      *  @brief  Pause to process plotting events
