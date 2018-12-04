@@ -100,25 +100,26 @@ if (USE_OPENMP)
 endif()
 
 # - build the sources into an object library
-set(BETHE_SRCS src/Particle.cc src/DetectorHelper.cc src/Propagator.cc src/ParticleFilter.cc src/FilterHelper.cc src/PlotHelper.cc src/ParticleHelper.cc)
+set(BETHE_SRCS libbethe-faster/Particle.cc libbethe-faster/DetectorHelper.cc libbethe-faster/Propagator.cc libbethe-faster/ParticleFilter.cc libbethe-faster/FilterHelper.cc libbethe-faster/PlotHelper.cc libbethe-faster/ParticleHelper.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})
 set_property(TARGET ${BETHE_OBJECTS} PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(${BETHE_OBJECTS} PRIVATE include ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${BETHE_OBJECTS} PRIVATE libbethe-faster ${CMAKE_CURRENT_BINARY_DIR})
 
 # - write the static library
 set(BETHE_STATIC_LIBRARY_NAME bethe-faster-static)
 add_library(${BETHE_STATIC_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:${BETHE_OBJECTS}>)
 set_target_properties(${BETHE_STATIC_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_include_directories(${BETHE_STATIC_LIBRARY_NAME} PRIVATE include ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${BETHE_STATIC_LIBRARY_NAME} PRIVATE libbethe-faster ${CMAKE_CURRENT_BINARY_DIR})
 
 # - write the shared library
 set(BETHE_SHARED_LIBRARY_NAME bethe-faster-shared)
 add_library(${BETHE_SHARED_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${BETHE_OBJECTS}>)
 set_target_properties(${BETHE_SHARED_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_include_directories(${BETHE_SHARED_LIBRARY_NAME} PRIVATE include ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(include)
+target_include_directories(${BETHE_SHARED_LIBRARY_NAME} PRIVATE libbethe-faster ${CMAKE_CURRENT_BINARY_DIR})
+
+include_directories(libbethe-faster)
 
 if(BUILD_TESTS)
     add_subdirectory(test)
@@ -134,4 +135,4 @@ install(DIRECTORY DESTINATION lib DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE O
 
 # - libraries
 install(TARGETS ${BETHE_STATIC_LIBRARY_NAME} ${BETHE_SHARED_LIBRARY_NAME} DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-install(DIRECTORY include/bethe-faster/ DESTINATION include/bethe-faster FILES_MATCHING PATTERN "*.h" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+install(DIRECTORY libbethe-faster/ DESTINATION include/bethe-faster FILES_MATCHING PATTERN "*.h" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

@@ -86,33 +86,30 @@ void GenerateParticles(const bf::Propagator &propagator, const bf::Propagator::P
 
     // Draw plots
     const std::string nameSuffix = "_" + modeName + "_" + std::to_string(deltaX) + "cm_" + std::to_string(maxEnergy) + "MeV.eps";
-
-    PlotOptions options;
+    bf::PlotOptions options;
 
     // Plot the energy graph
-    auto muonEnergyGraph        = bf::PlotHelper::GetParticleEnergyGraph(spMuon);
-    auto chargedPionEnergyGraph = bf::PlotHelper::GetParticleEnergyGraph(spChargedPion);
-    auto chargedKaonEnergyGraph = bf::PlotHelper::GetParticleEnergyGraph(spChargedKaon);
-    auto protonEnergyGraph      = bf::PlotHelper::GetParticleEnergyGraph(spProton);
+    auto muonEnergyGraph        = bf::MultiGraphEntry{bf::PlotHelper::GetParticleEnergyGraph(spMuon), "\\mu", 0UL};
+    auto chargedPionEnergyGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleEnergyGraph(spChargedPion), "\\pi^\\pm", 1UL};
+    auto chargedKaonEnergyGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleEnergyGraph(spChargedKaon), "K^\\pm", 2UL};
+    auto protonEnergyGraph      = bf::MultiGraphEntry{bf::PlotHelper::GetParticleEnergyGraph(spProton), "p\\", 3UL};
 
     options.m_isLine     = (mode != bf::Propagator::PROPAGATION_MODE::STOCHASTIC);
     options.m_style      = options.m_isLine ? 2 : 6;
-    options.m_fileName   = "energy" + nameSuffix;
     options.m_xAxisTitle = "x\\text{ (cm)}";
     options.m_yAxisTitle = "T \\text{ (MeV)}";
     options.m_yLogScale  = false;
 
-    WriteMultiGraph(muonEnergyGraph, chargedPionEnergyGraph, chargedKaonEnergyGraph, protonEnergyGraph, options);
+    bf::PlotHelper::DrawMultiGraph({muonEnergyGraph, chargedPionEnergyGraph, chargedKaonEnergyGraph, protonEnergyGraph}, options)->SaveAs(("energy" + nameSuffix).c_str());
 
     // Plot the dE/dx versus x graph
-    auto muondEdxVersusXGraph        = bf::PlotHelper::GetParticledEdxVersusXGraph(spMuon);
-    auto chargedPiondEdxVersusXGraph = bf::PlotHelper::GetParticledEdxVersusXGraph(spChargedPion);
-    auto chargedKaondEdxVersusXGraph = bf::PlotHelper::GetParticledEdxVersusXGraph(spChargedKaon);
-    auto protondEdxVersusXGraph      = bf::PlotHelper::GetParticledEdxVersusXGraph(spProton);
+    auto muondEdxVersusXGraph        = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusXGraph(spMuon), "\\mu", 0UL};
+    auto chargedPiondEdxVersusXGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusXGraph(spChargedPion), "\\pi^\\pm", 1UL};
+    auto chargedKaondEdxVersusXGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusXGraph(spChargedKaon), "K^\\pm", 2UL};
+    auto protondEdxVersusXGraph      = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusXGraph(spProton), "p\\", 3UL};
 
     options.m_isLine     = (mode != bf::Propagator::PROPAGATION_MODE::STOCHASTIC);
     options.m_style      = options.m_isLine ? 2 : 6;
-    options.m_fileName   = "dEdx_versus_x" + nameSuffix;
     options.m_xAxisTitle = "x\\text{ (cm)}";
     options.m_yAxisTitle = "-\\mathrm{d}E/\\mathrm{d}x \\text{ (MeV/cm)}";
     options.m_yLogScale  = true;
@@ -120,17 +117,16 @@ void GenerateParticles(const bf::Propagator &propagator, const bf::Propagator::P
     if (!options.m_isLine && (deltaX < 0.1))
         options.m_style = 1;
 
-    WriteMultiGraph(muondEdxVersusXGraph, chargedPiondEdxVersusXGraph, chargedKaondEdxVersusXGraph, protondEdxVersusXGraph, options);
+    bf::PlotHelper::DrawMultiGraph({muondEdxVersusXGraph, chargedPiondEdxVersusXGraph, chargedKaondEdxVersusXGraph, protondEdxVersusXGraph}, options)->SaveAs(("dEdx_versus_x" + nameSuffix).c_str());
 
     // Plot the dE/dx versus T graph
-    auto muondEdxVersusTGraph        = bf::PlotHelper::GetParticledEdxVersusTGraph(spMuon);
-    auto chargedPiondEdxVersusTGraph = bf::PlotHelper::GetParticledEdxVersusTGraph(spChargedPion);
-    auto chargedKaondEdxVersusTGraph = bf::PlotHelper::GetParticledEdxVersusTGraph(spChargedKaon);
-    auto protondEdxVersusTGraph      = bf::PlotHelper::GetParticledEdxVersusTGraph(spProton);
+    auto muondEdxVersusTGraph        = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusTGraph(spMuon), "\\mu", 0UL};
+    auto chargedPiondEdxVersusTGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusTGraph(spChargedPion), "\\pi^\\pm", 1UL};
+    auto chargedKaondEdxVersusTGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusTGraph(spChargedKaon), "K^\\pm", 2UL};
+    auto protondEdxVersusTGraph      = bf::MultiGraphEntry{bf::PlotHelper::GetParticledEdxVersusTGraph(spProton), "p\\", 3UL};
 
     options.m_isLine     = (mode != bf::Propagator::PROPAGATION_MODE::STOCHASTIC);
     options.m_style      = options.m_isLine ? 2 : 6;
-    options.m_fileName   = "dEdx_versus_T" + nameSuffix;
     options.m_xAxisTitle = "T\\text{ (MeV)}";
     options.m_yAxisTitle = "-\\mathrm{d}E/\\mathrm{d}x \\text{ (MeV/cm)}";
     options.m_yLogScale  = true;
@@ -138,37 +134,35 @@ void GenerateParticles(const bf::Propagator &propagator, const bf::Propagator::P
     if (!options.m_isLine && (deltaX < 0.1))
         options.m_style = 1;
 
-    WriteMultiGraph(muondEdxVersusTGraph, chargedPiondEdxVersusTGraph, chargedKaondEdxVersusTGraph, protondEdxVersusTGraph, options);
+    bf::PlotHelper::DrawMultiGraph({muondEdxVersusTGraph, chargedPiondEdxVersusTGraph, chargedKaondEdxVersusTGraph, protondEdxVersusTGraph}, options)->SaveAs(("dEdx_versus_T" + nameSuffix).c_str());
 
     // Plot the kappa versus x graph
-    auto muonKappaVersusXGraph        = bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spMuon);
-    auto chargedPionKappaVersusXGraph = bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spChargedPion);
-    auto chargedKaonKappaVersusXGraph = bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spChargedKaon);
-    auto protonKappaVersusXGraph      = bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spProton);
+    auto muonKappaVersusXGraph        = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spMuon), "\\mu", 0UL};
+    auto chargedPionKappaVersusXGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spChargedPion), "\\pi^\\pm", 1UL};
+    auto chargedKaonKappaVersusXGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spChargedKaon), "K^\\pm", 2UL};
+    auto protonKappaVersusXGraph      = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusXGraph(propagator, spProton), "p\\", 3UL};
 
     options.m_isLine     = (mode != bf::Propagator::PROPAGATION_MODE::STOCHASTIC);
     options.m_style      = options.m_isLine ? 2 : 6;
-    options.m_fileName   = "kappa_versus_x" + nameSuffix;
     options.m_xAxisTitle = "x\\text{ (cm)}";
     options.m_yAxisTitle = "\\kappa";
     options.m_yLogScale  = true;
 
-    WriteMultiGraph(muonKappaVersusXGraph, chargedPionKappaVersusXGraph, chargedKaonKappaVersusXGraph, protonKappaVersusXGraph, options);
+    bf::PlotHelper::DrawMultiGraph({muonKappaVersusXGraph, chargedPionKappaVersusXGraph, chargedKaonKappaVersusXGraph, protonKappaVersusXGraph}, options)->SaveAs(("kappa_versus_x" + nameSuffix).c_str());
 
     // Plot the kappa versus T graph
-    auto muonKappaVersusTGraph        = bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spMuon);
-    auto chargedPionKappaVersusTGraph = bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spChargedPion);
-    auto chargedKaonKappaVersusTGraph = bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spChargedKaon);
-    auto protonKappaVersusTGraph      = bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spProton);
+    auto muonKappaVersusTGraph        = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spMuon), "\\mu", 0UL};
+    auto chargedPionKappaVersusTGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spChargedPion), "\\pi^\\pm", 1UL};
+    auto chargedKaonKappaVersusTGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spChargedKaon), "K^\\pm", 2UL};
+    auto protonKappaVersusTGraph      = bf::MultiGraphEntry{bf::PlotHelper::GetParticleKappaVersusTGraph(propagator, spProton), "p\\", 3UL};
 
     options.m_isLine     = (mode != bf::Propagator::PROPAGATION_MODE::STOCHASTIC);
     options.m_style      = options.m_isLine ? 2 : 6;
-    options.m_fileName   = "kappa_versus_T" + nameSuffix;
     options.m_xAxisTitle = "T\\text{ (MeV)}";
     options.m_yAxisTitle = "\\kappa";
     options.m_yLogScale  = true;
 
-    WriteMultiGraph(muonKappaVersusTGraph, chargedPionKappaVersusTGraph, chargedKaonKappaVersusTGraph, protonKappaVersusTGraph, options);
+    bf::PlotHelper::DrawMultiGraph({muonKappaVersusTGraph, chargedPionKappaVersusTGraph, chargedKaonKappaVersusTGraph, protonKappaVersusTGraph}, options)->SaveAs(("kappa_versus_T" + nameSuffix).c_str());
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -246,93 +240,18 @@ void FilterOnParticle(const bf::Detector &detector, const bf::Propagator &propag
         std::cout << "Mispredicted " << bf::ParticleHelper::ToString(type) << " as " << bf::ParticleHelper::ToString(predictedType) << std::endl;
 
     // Plot the likelihood graphs
-    auto muonGraph        = bf::PlotHelper::GetParticleLikelihoodHistoryGraph(muonDistributionHistory);
-    auto chargedPionGraph = bf::PlotHelper::GetParticleLikelihoodHistoryGraph(chargedPionDistributionHistory);
-    auto chargedKaonGraph = bf::PlotHelper::GetParticleLikelihoodHistoryGraph(chargedKaonDistributionHistory);
-    auto protonGraph      = bf::PlotHelper::GetParticleLikelihoodHistoryGraph(protonDistributionHistory);
+    auto muonGraph        = bf::MultiGraphEntry{bf::PlotHelper::GetParticleLikelihoodHistoryGraph(muonDistributionHistory), "\\mu", 0UL};
+    auto chargedPionGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleLikelihoodHistoryGraph(chargedPionDistributionHistory), "\\pi^\\pm", 1UL};
+    auto chargedKaonGraph = bf::MultiGraphEntry{bf::PlotHelper::GetParticleLikelihoodHistoryGraph(chargedKaonDistributionHistory), "K^\\pm", 2UL};
+    auto protonGraph      = bf::MultiGraphEntry{bf::PlotHelper::GetParticleLikelihoodHistoryGraph(protonDistributionHistory), "p\\", 3UL};
 
-    PlotOptions options;
+    bf::PlotOptions options;
     options.m_isLine = true;
     options.m_style  = 2;
-    options.m_fileName = "likelihood_" + bf::ParticleHelper::ToString(type) + "_" + std::to_string(deltaX) + "cm_" + std::to_string(maxEnergy) + "MeV.eps";
     options.m_xAxisTitle = "\\text{Observation number}";
     options.m_yAxisTitle = "\\text{Log-likelihood}";
     options.m_yLogScale  = false;
 
-    WriteMultiGraph(muonGraph, chargedPionGraph, chargedKaonGraph, protonGraph, options);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------
-
-void WriteMultiGraph(TGraph &muonGraph, TGraph &chargedPionGraph, TGraph &chargedKaonGraph, TGraph &protonGraph, const PlotOptions &options)
-{
-    // Create the canvas and get the graphs
-    TCanvas canvas{"bfCanvas", "bfCanvas", 800, 600};
-    canvas.SetGrid();
-
-    if (options.m_yLogScale)
-        canvas.SetLogy();
-
-    // Format the graphs
-    const auto muonColour = bf::PlotHelper::GetSchemeColour(0UL);
-    muonGraph.SetFillColor(muonColour);
-
-    const auto chargedPionColour = bf::PlotHelper::GetSchemeColour(1UL);
-    chargedPionGraph.SetFillColor(chargedPionColour);
-
-    const auto chargedKaonColour = bf::PlotHelper::GetSchemeColour(2UL);
-    chargedKaonGraph.SetFillColor(chargedKaonColour);
-
-    const auto protonColour = bf::PlotHelper::GetSchemeColour(3UL);
-    protonGraph.SetFillColor(protonColour);
-
-    if (options.m_isLine)
-    {
-        muonGraph.SetLineWidth(options.m_style);
-        chargedPionGraph.SetLineWidth(options.m_style);
-        chargedKaonGraph.SetLineWidth(options.m_style);
-        protonGraph.SetLineWidth(options.m_style);
-
-        muonGraph.SetLineColor(muonColour);
-        chargedPionGraph.SetLineColor(chargedPionColour);
-        chargedKaonGraph.SetLineColor(chargedKaonColour);
-        protonGraph.SetLineColor(protonColour);
-    }
-
-    else
-    {
-        muonGraph.SetMarkerStyle(options.m_style);
-        muonGraph.SetMarkerStyle(options.m_style);
-        chargedPionGraph.SetMarkerStyle(options.m_style);
-        chargedKaonGraph.SetMarkerStyle(options.m_style);
-        protonGraph.SetMarkerStyle(options.m_style);
-
-        muonGraph.SetMarkerColor(muonColour);
-        chargedPionGraph.SetMarkerColor(chargedPionColour);
-        chargedKaonGraph.SetMarkerColor(chargedKaonColour);
-        protonGraph.SetMarkerColor(protonColour);
-    }
-
-    // Create and draw the multi-graph
-    TMultiGraph multiGraph{};
-    multiGraph.Add(&muonGraph);
-    multiGraph.Add(&chargedPionGraph);
-    multiGraph.Add(&chargedKaonGraph);
-    multiGraph.Add(&protonGraph);
-
-    multiGraph.GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
-    multiGraph.GetYaxis()->SetTitle(options.m_yAxisTitle.c_str());
-
-    multiGraph.Draw(options.m_isLine ? "AL" : "AP");
-
-    // Add legend
-    TLegend legend{0.8, 0.72, 0.88, 0.88};
-    legend.AddEntry(&muonGraph, "\\mu^-", "f");
-    legend.AddEntry(&chargedPionGraph, "\\pi^\\pm", "f");
-    legend.AddEntry(&chargedKaonGraph, "K^\\pm", "f");
-    legend.AddEntry(&protonGraph, "p\\", "f");
-    legend.SetBorderSize(1);
-    legend.Draw();
-
-    canvas.SaveAs(options.m_fileName.c_str());
+    const auto fileName = "likelihood_" + bf::ParticleHelper::ToString(type) + "_" + std::to_string(deltaX) + "cm_" + std::to_string(maxEnergy) + "MeV.eps";
+    bf::PlotHelper::DrawMultiGraph({muonGraph, chargedPionGraph, chargedKaonGraph, protonGraph}, options)->SaveAs(fileName.c_str());
 }

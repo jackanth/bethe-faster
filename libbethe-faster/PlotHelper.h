@@ -22,6 +22,66 @@ namespace bf
 {
 
 /**
+ *  @brief  A multigraph entry
+ */
+class MultiGraphEntry
+{
+public:
+    /**
+     *  @brief  Constructor
+     * 
+     *  @param  graph the graph
+     *  @param  legendText the legend text
+     *  @param  colour the colour
+     */
+    MultiGraphEntry(TGraph graph, std::string legendText, const unsigned int colour) noexcept;
+
+    /**
+     *  @brief  Get the graph
+     * 
+     *  @return the graph
+     */
+    TGraph & Graph() noexcept;
+
+    /**
+     *  @brief  Get the legend text
+     * 
+     *  @return the legend text
+     */
+    std::string LegendText() const noexcept;
+
+    /**
+     *  @brief  Get the colour
+     * 
+     *  @return the colour
+     */
+    unsigned int Colour() const noexcept;
+
+private:
+    TGraph       m_graph;      ///< The graph
+    std::string  m_legendText; ///< The legend text
+    unsigned int m_colour;     ///< Entry colour
+};
+
+/**
+ *  @brief  Some plotting options
+ */
+struct PlotOptions
+{
+    /**
+     *  @brief  Constructor
+     */
+    PlotOptions() noexcept;
+
+    bool         m_isLine;     ///< Whether it is a line graph
+    std::int16_t m_style;      ///< The line width or marker style
+    std::string  m_xAxisTitle; ///< The x-axis title
+    std::string  m_yAxisTitle; ///< The y-axis title
+    bool         m_yLogScale;  ///< Whether y has a log scale
+    bool         m_xLogScale;  ///< Whether y has a log scale
+};
+
+/**
  *  @brief  PlotHelper class
  */
 class PlotHelper
@@ -247,6 +307,16 @@ public:
         const unsigned int colour = 0UL, const std::int16_t lineWidth = 2);
 
     /**
+     *  @brief  Draw a multigraph
+     * 
+     *  @param  graphEntries the graph entries
+     *  @param  options the plotting options
+     * 
+     *  @return address of the canvas
+     */
+    static TCanvas *DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, const PlotOptions &options);
+
+    /**
      *  @brief  Pause to process plotting events
      */
     static void Pause();
@@ -260,6 +330,50 @@ public:
      */
     static std::int16_t GetSchemeColour(const unsigned int number);
 };
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline MultiGraphEntry::MultiGraphEntry(TGraph graph, std::string legendText, const unsigned int colour) noexcept :
+    m_graph{std::move_if_noexcept(graph)},
+    m_legendText{std::move_if_noexcept(legendText)},
+    m_colour{colour}
+{
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline TGraph & MultiGraphEntry::Graph() noexcept
+{
+    return m_graph;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline std::string MultiGraphEntry::LegendText() const noexcept
+{
+    return m_legendText;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline unsigned int MultiGraphEntry::Colour() const noexcept
+{
+    return m_colour;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline PlotOptions::PlotOptions() noexcept :
+    m_isLine{false},
+    m_style{6},
+    m_xAxisTitle{},
+    m_yAxisTitle{},
+    m_yLogScale{false},
+    m_xLogScale{false}
+{
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------------
