@@ -17,6 +17,8 @@
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TStyle.h"
+#include "TMultiGraph.h"
+#include "TLegend.h"
 
 namespace bf
 {
@@ -33,8 +35,10 @@ public:
      *  @param  graph the graph
      *  @param  legendText the legend text
      *  @param  colour the colour
+     *  @param  drawLine whether to draw a line instead of points
+     *  @param  style the line width or marker style
      */
-    MultiGraphEntry(TGraph graph, std::string legendText, const unsigned int colour) noexcept;
+    MultiGraphEntry(TGraph graph, std::string legendText, const unsigned int colour, bool drawLine, const std::int16_t style) noexcept;
 
     /**
      *  @brief  Get the graph
@@ -48,7 +52,7 @@ public:
      * 
      *  @return the legend text
      */
-    std::string LegendText() const noexcept;
+    const std::string &LegendText() const noexcept;
 
     /**
      *  @brief  Get the colour
@@ -57,10 +61,26 @@ public:
      */
     unsigned int Colour() const noexcept;
 
+    /**
+     *  @brief  Get whether to draw a line instead of markers
+     * 
+     *  @return whether to draw a line
+     */
+    bool DrawLine() const noexcept;
+
+    /**
+     *  @brief  Get the line width or marker style
+     * 
+     *  @return the line width or marker style
+     */
+    std::int16_t Style() const noexcept;
+
 private:
     TGraph       m_graph;      ///< The graph
     std::string  m_legendText; ///< The legend text
     unsigned int m_colour;     ///< Entry colour
+    bool         m_drawLine;   ///< Whether to draw a line
+    std::int16_t m_style;      ///< The line width or marker style
 };
 
 /**
@@ -73,10 +93,9 @@ struct PlotOptions
      */
     PlotOptions() noexcept;
 
-    bool         m_isLine;     ///< Whether it is a line graph
-    std::int16_t m_style;      ///< The line width or marker style
     std::string  m_xAxisTitle; ///< The x-axis title
     std::string  m_yAxisTitle; ///< The y-axis title
+    bool         m_drawLegend; ///< Whether to draw the legend
     bool         m_yLogScale;  ///< Whether y has a log scale
     bool         m_xLogScale;  ///< Whether y has a log scale
 };
@@ -307,6 +326,16 @@ public:
         const unsigned int colour = 0UL, const std::int16_t lineWidth = 2);
 
     /**
+     *  @brief  Get a multigraph
+     * 
+     *  @param  graphEntries the graph entries
+     *  @param  options the plotting options
+     *  @param  pMultiGraph address of the new TMultiGraph
+     *  @param  pLegend address of the new TLegend
+     */
+    static void GetMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options, TMultiGraph *&pMultiGraph, TLegend *&pLegend);
+
+    /**
      *  @brief  Draw a multigraph
      * 
      *  @param  graphEntries the graph entries
@@ -334,10 +363,12 @@ public:
 //-----------------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
-inline MultiGraphEntry::MultiGraphEntry(TGraph graph, std::string legendText, const unsigned int colour) noexcept :
+inline MultiGraphEntry::MultiGraphEntry(TGraph graph, std::string legendText, const unsigned int colour, const bool drawLine, const std::int16_t style) noexcept :
     m_graph{std::move_if_noexcept(graph)},
     m_legendText{std::move_if_noexcept(legendText)},
-    m_colour{colour}
+    m_colour{colour},
+    m_drawLine{drawLine},
+    m_style{style}
 {
 }
 
@@ -350,7 +381,7 @@ inline TGraph & MultiGraphEntry::Graph() noexcept
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::string MultiGraphEntry::LegendText() const noexcept
+inline const std::string &MultiGraphEntry::LegendText() const noexcept
 {
     return m_legendText;
 }
@@ -363,13 +394,26 @@ inline unsigned int MultiGraphEntry::Colour() const noexcept
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline bool MultiGraphEntry::DrawLine() const noexcept
+{
+    return m_drawLine;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+inline std::int16_t MultiGraphEntry::Style() const noexcept
+{
+    return m_style;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
 inline PlotOptions::PlotOptions() noexcept :
-    m_isLine{false},
-    m_style{6},
     m_xAxisTitle{},
     m_yAxisTitle{},
+    m_drawLegend{true},
     m_yLogScale{false},
     m_xLogScale{false}
 {

@@ -11,8 +11,6 @@
 #include "TAxis.h"
 #include "TROOT.h"
 #include "TSystem.h"
-#include "TLegend.h"
-#include "TMultiGraph.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -430,6 +428,44 @@ TCanvas *PlotHelper::PlotParticleLikelihoodHistory(
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
+void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options, TMultiGraph *&pMultiGraph, TLegend *&pLegend)
+{
+    // Create the multigraph and the legend
+    pMultiGraph = new TMultiGraph{};
+    pLegend = new TLegend{0.8, 0.72, 0.88, 0.88};
+
+    pLegend->SetBorderSize(1);
+
+    for (auto &wGraphEntry : graphEntries)
+    {
+        auto &graphEntry = wGraphEntry.get();
+        
+        const auto colour = bf::PlotHelper::GetSchemeColour(graphEntry.Colour());
+        auto &     graph  = graphEntry.Graph();
+        graph.SetFillColor(colour);
+
+        if (graphEntry.DrawLine())
+        {
+            graph.SetLineWidth(graphEntry.Style());
+            graph.SetLineColor(colour);
+        }
+
+        else
+        {
+            graph.SetMarkerStyle(graphEntry.Style());
+            graph.SetMarkerColor(colour);
+        }
+
+        pMultiGraph->Add(&graph, graphEntry.DrawLine() ? "L" : "P");
+        pLegend->AddEntry(&graph, graphEntry.LegendText().c_str(), graphEntry.DrawLine() ? "L" : "F");
+    }
+
+    pMultiGraph->GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
+    pMultiGraph->GetYaxis()->SetTitle(options.m_yAxisTitle.c_str());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
 TCanvas *PlotHelper::DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, const PlotOptions &options)
 {
     // Create the multigraph and the legend
@@ -443,19 +479,19 @@ TCanvas *PlotHelper::DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, c
         auto &     graph  = graphEntry.Graph();
         graph.SetFillColor(colour);
 
-        if (options.m_isLine)
+        if (graphEntry.DrawLine())
         {
-            graph.SetLineWidth(options.m_style);
+            graph.SetLineWidth(graphEntry.Style());
             graph.SetLineColor(colour);
         }
 
         else
         {
-            graph.SetMarkerStyle(options.m_style);
+            graph.SetMarkerStyle(graphEntry.Style());
             graph.SetMarkerColor(colour);
         }
 
-        multiGraph.Add(&graph);
+        multiGraph.Add(&graph, graphEntry.DrawLine() ? "L" : "P");
         legend.AddEntry(&graph, graphEntry.LegendText().c_str(), "f");
     }
 
@@ -472,8 +508,8 @@ TCanvas *PlotHelper::DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, c
     if (options.m_xLogScale)
         pCanvas->SetLogx();
 
-    multiGraph.DrawClone(options.m_isLine ? "AL" : "AP");
-    legend.Draw();
+    if (options.m_drawLegend)
+        legend.Draw();
 
     return pCanvas;
 }
