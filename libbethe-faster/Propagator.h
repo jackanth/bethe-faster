@@ -76,6 +76,27 @@ public:
      */
     double CalculateKappa(const double mass, const double energy, const double deltaX) const;
 
+    /**
+     *  @brief  Get the density correction value
+     *
+     *  @param  mass the particle mass
+     *  @param  energy the particle energy
+     *
+     *  @return the density correction
+     */
+    double DensityCorrection(const double mass, const double energy) const;
+
+    /**
+     *  @brief  Get the xi value
+     *
+     *  @param  mass the particle mass
+     *  @param  energy the particle energy
+     *  @param  deltaX the effective thickness
+     *
+     *  @return the value of xi
+     */
+    double Xi(const double mass, const double energy, const double deltaX) const;
+
 protected:
     /**
      *  @brief  Calculate the probability of an observation for a given particle
@@ -225,6 +246,22 @@ inline double Propagator::CalculateKappa(const double mass, const double energy,
 {
     const double beta = ParticleHelper::GetParticleBeta(mass, energy);
     return this->Xi(beta * beta, deltaX) / this->GetMaxEnergyTransfer(beta, mass);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Propagator::DensityCorrection(const double mass, const double energy) const
+{
+    const double beta = ParticleHelper::GetParticleBeta(mass, energy);
+    return this->DensityCorrection(beta);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double Propagator::Xi(const double mass, const double energy, const double deltaX) const
+{
+    const double beta = ParticleHelper::GetParticleBeta(mass, energy);
+    return this->Xi(beta * beta, deltaX);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

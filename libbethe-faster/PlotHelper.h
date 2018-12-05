@@ -98,6 +98,10 @@ struct PlotOptions
     bool         m_drawLegend; ///< Whether to draw the legend
     bool         m_yLogScale;  ///< Whether y has a log scale
     bool         m_xLogScale;  ///< Whether y has a log scale
+    double       m_legendX1;   ///< The legend x1 coordinate
+    double       m_legendX2;   ///< The legend x2 coordinate
+    double       m_legendY1;   ///< The legend y1 coordinate
+    double       m_legendY2;   ///< The legend y2 coordinate
 };
 
 /**
@@ -415,7 +419,11 @@ inline PlotOptions::PlotOptions() noexcept :
     m_yAxisTitle{},
     m_drawLegend{true},
     m_yLogScale{false},
-    m_xLogScale{false}
+    m_xLogScale{false},
+    m_legendX1{0.8},
+    m_legendX2{0.88},
+    m_legendY1{0.72},
+    m_legendY2{0.88}
 {
 }
 

@@ -101,6 +101,25 @@ public:
     static std::shared_ptr<Particle> GetChargedKaon(const double finalKineticEnergy = 0., const double finalResidualRange = 0.);
 
     /**
+     *  @brief  Calculate gamma for a particle
+     *
+     *  @param  spParticle shared pointer to the particle
+     *
+     *  @return the particle gamma
+     */
+    static double GetParticleGamma(const std::shared_ptr<Particle> &spParticle);
+
+    /**
+     *  @brief  Calculate gamma for a particle
+     *
+     *  @param  mass the particle mass
+     *  @param  energy the particle energy
+     *
+     *  @return the particle gamma
+     */
+    static double GetParticleGamma(const double mass, const double energy);
+
+    /**
      *  @brief  Calculate beta for a particle
      *
      *  @param  spParticle shared pointer to the particle
@@ -161,9 +180,23 @@ inline std::shared_ptr<Particle> ParticleHelper::GetChargedKaon(const double fin
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+inline double ParticleHelper::GetParticleGamma(const double mass, const double energy)
+{
+    return energy / mass + 1.;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+inline double ParticleHelper::GetParticleGamma(const std::shared_ptr<Particle> &spParticle)
+{
+    return ParticleHelper::GetParticleGamma(spParticle->Mass(), spParticle->KineticEnergy());
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 inline double ParticleHelper::GetParticleBeta(const double mass, const double energy)
 {
-    const double gamma = energy / mass + 1.;
+    const double gamma = ParticleHelper::GetParticleGamma(mass, energy);
     return std::sqrt(1. - 1. / (gamma * gamma));
 }
 

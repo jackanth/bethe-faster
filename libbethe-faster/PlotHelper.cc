@@ -432,7 +432,7 @@ void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGra
 {
     // Create the multigraph and the legend
     pMultiGraph = new TMultiGraph{};
-    pLegend = new TLegend{0.8, 0.72, 0.88, 0.88};
+    pLegend = new TLegend{options.m_legendX1, options.m_legendY1, options.m_legendX2, options.m_legendY2};
 
     pLegend->SetBorderSize(1);
 
@@ -474,7 +474,7 @@ TCanvas *PlotHelper::DrawMultiGraph(const std::vector<std::reference_wrapper<Mul
     
     // Create the multigraph and the legend
     TMultiGraph *pMultiGraph = new TMultiGraph{};
-    TLegend     legend{0.8, 0.72, 0.88, 0.88};
+    TLegend     legend{options.m_legendX1, options.m_legendY1, options.m_legendX2, options.m_legendY2};
     legend.SetBorderSize(1);
 
     for (const auto &wGraphEntry : graphEntries)
