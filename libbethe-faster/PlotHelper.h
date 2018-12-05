@@ -343,7 +343,7 @@ public:
      * 
      *  @return address of the canvas
      */
-    static TCanvas *DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, const PlotOptions &options);
+    static TCanvas *DrawMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options);
 
     /**
      *  @brief  Pause to process plotting events

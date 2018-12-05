@@ -466,15 +466,21 @@ void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGra
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
-TCanvas *PlotHelper::DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, const PlotOptions &options)
+TCanvas *PlotHelper::DrawMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options)
 {
+    // Create the canvas
+    const auto canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
+    TCanvas *const pCanvas = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
+    
     // Create the multigraph and the legend
-    TMultiGraph multiGraph{};
+    TMultiGraph *pMultiGraph = new TMultiGraph{};
     TLegend     legend{0.8, 0.72, 0.88, 0.88};
     legend.SetBorderSize(1);
 
-    for (auto &graphEntry : graphEntries)
+    for (const auto &wGraphEntry : graphEntries)
     {
+        auto &graphEntry = wGraphEntry.get();
+
         const auto colour = bf::PlotHelper::GetSchemeColour(graphEntry.Colour());
         auto &     graph  = graphEntry.Graph();
         graph.SetFillColor(colour);
@@ -491,16 +497,12 @@ TCanvas *PlotHelper::DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, c
             graph.SetMarkerColor(colour);
         }
 
-        multiGraph.Add(&graph, graphEntry.DrawLine() ? "L" : "P");
+        pMultiGraph->Add(&graph, graphEntry.DrawLine() ? "L" : "P");
         legend.AddEntry(&graph, graphEntry.LegendText().c_str(), "f");
     }
 
-    multiGraph.GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
-    multiGraph.GetYaxis()->SetTitle(options.m_yAxisTitle.c_str());
-
-    // Create the canvas and get the graphs
-    const auto canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
-    TCanvas *const pCanvas = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
+    pMultiGraph->GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
+    pMultiGraph->GetYaxis()->SetTitle(options.m_yAxisTitle.c_str());
 
     if (options.m_yLogScale)
         pCanvas->SetLogy();
@@ -508,8 +510,10 @@ TCanvas *PlotHelper::DrawMultiGraph(std::vector<MultiGraphEntry> graphEntries, c
     if (options.m_xLogScale)
         pCanvas->SetLogx();
 
+    pMultiGraph->DrawClone("A");
+
     if (options.m_drawLegend)
-        legend.Draw();
+        legend.DrawClone();
 
     return pCanvas;
 }
