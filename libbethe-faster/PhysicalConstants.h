@@ -1,7 +1,7 @@
 /**
  *  @file   bethe-faster/include/PhysicalConstants.h
  *
- *  @brief  Header file for the physical constnats struct.
+ *  @brief  Header file for the physical constants struct.
  *
  *  $Log: $
  */
@@ -31,8 +31,8 @@ struct PhysicalConstants
     static constexpr double m_chargedKaonMass   = 493.677;       ///< MeV
     static constexpr double m_landauMode        = -0.22278;      ///< no units
     static constexpr double m_ln10              = 2.30258509299; ///< no units
-    static constexpr double m_betheMinBetaGamma = 0.1;           ///< no units
-    static constexpr double m_betheMaxBetaGamma = 1000.;         ///< no units
+    static constexpr double m_betheMinBetaGamma = 0.01;          ///< no units
+    static constexpr double m_betheMaxBetaGamma = 10000.;        ///< no units
 };
 
 } // namespace bf

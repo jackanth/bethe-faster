@@ -457,7 +457,9 @@ void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGra
         }
 
         pMultiGraph->Add(&graph, graphEntry.DrawLine() ? "L" : "P");
-        pLegend->AddEntry(&graph, graphEntry.LegendText().c_str(), graphEntry.DrawLine() ? "L" : "F");
+
+        if (!graphEntry.LegendText().empty())
+            pLegend->AddEntry(&graph, graphEntry.LegendText().c_str(), graphEntry.DrawLine() ? "L" : "F");
     }
 
     pMultiGraph->GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
@@ -498,7 +500,9 @@ TCanvas *PlotHelper::DrawMultiGraph(const std::vector<std::reference_wrapper<Mul
         }
 
         pMultiGraph->Add(&graph, graphEntry.DrawLine() ? "L" : "P");
-        legend.AddEntry(&graph, graphEntry.LegendText().c_str(), "f");
+
+        if (!graphEntry.LegendText().empty())
+            legend.AddEntry(&graph, graphEntry.LegendText().c_str(), "f");
     }
 
     pMultiGraph->GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
