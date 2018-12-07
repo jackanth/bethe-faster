@@ -100,7 +100,7 @@ if (USE_OPENMP)
 endif()
 
 # - build the sources into an object library
-set(BETHE_SRCS libbethe-faster/Particle.cc libbethe-faster/DetectorHelper.cc libbethe-faster/Propagator.cc libbethe-faster/ParticleFilter.cc libbethe-faster/FilterHelper.cc libbethe-faster/PlotHelper.cc libbethe-faster/ParticleHelper.cc)
+set(BETHE_SRCS libbethe-faster/Particle.cc libbethe-faster/DetectorHelper.cc libbethe-faster/Propagator.cc libbethe-faster/ParticleFilter.cc libbethe-faster/FilterHelper.cc libbethe-faster/PlotHelper.cc libbethe-faster/ParticleHelper.cc libbethe-faster/QuickPidAlgorithm.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})

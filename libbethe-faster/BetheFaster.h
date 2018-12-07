@@ -14,6 +14,7 @@
 #include "ParticleFilter.h"
 #include "PhysicalConstants.h"
 #include "Propagator.h"
+#include "QuickPidAlgorithm.h"
 
 #include "DetectorHelper.h"
 #include "FilterHelper.h"

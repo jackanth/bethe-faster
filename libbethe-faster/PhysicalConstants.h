@@ -33,6 +33,7 @@ struct PhysicalConstants
     static constexpr double m_ln10              = 2.30258509299; ///< no units
     static constexpr double m_betheMinBetaGamma = 0.01;          ///< no units
     static constexpr double m_betheMaxBetaGamma = 10000.;        ///< no units
+    static constexpr double m_vavilovJ          = 0.20000;       ///< no units
 };
 
 } // namespace bf
