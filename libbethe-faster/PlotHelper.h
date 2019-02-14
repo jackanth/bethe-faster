@@ -168,10 +168,11 @@ public:
      *
      *  @param  spParticle shared pointer to the particle
      *  @param  useResidualRange whether the use residual range instead of position
+     *  @param  offset the offset to use
      *
      *  @return the graph
      */
-    static TGraph GetParticledEdxVersusXGraph(const std::shared_ptr<Particle> &spParticle, const bool useResidualRange = false);
+    static TGraph GetParticledEdxVersusXGraph(const std::shared_ptr<Particle> &spParticle, const bool useResidualRange = false, const double offset = 0.);
 
     /**
      *  @brief  Plot a particle's dEdx versus x using a line with some default settings

@@ -48,7 +48,7 @@ double Propagator::PropagateBackwards(const std::shared_ptr<Particle> &spParticl
 
         if (beta2 <= std::numeric_limits<double>::epsilon())
         {
-            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 0.1);
+            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 1.0);
             continue;
         }
 
@@ -58,7 +58,7 @@ double Propagator::PropagateBackwards(const std::shared_ptr<Particle> &spParticl
 
         if (expectedLoss < 0.f) // the particle is too slow so our model has broken down
         {
-            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 1.);
+            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 1.0);
             continue;
         }
 
@@ -87,6 +87,12 @@ double Propagator::PropagateBackwards(const std::shared_ptr<Particle> &spParticl
 
             default:
                 throw std::runtime_error{"Unknown propagation mode"};
+        }
+
+        if (deltaE / stepSize < -20.)
+        {
+            spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 1.0);
+            continue;
         }
 
         spParticle->Increment(stepSize, -deltaE);
@@ -190,6 +196,9 @@ double Propagator::SampleDeltaE(const double meanEnergyLoss, const double kappa,
 
 double Propagator::GetDeltaEMode(const double meanEnergyLoss, const double kappa, const double beta2, const double xi) const
 {
+    //return meanEnergyLoss + xi * (this->GetVavilovMode(kappa, beta2) + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
+    return meanEnergyLoss + xi * (beta2 + std::log(kappa) + PhysicalConstants::m_vavilovJ);
+
     if (kappa > 10.) // Gaussian approximation
         return meanEnergyLoss;
 

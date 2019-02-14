@@ -17,8 +17,8 @@ option(USE_OPENMP "Whether to build with OpenMP support" ON)
 #------------------------------------------------------------------------------
 # Compiler flags
 
-# - set C++14 flag
-set(CMAKE_CXX_STANDARD 14)
+# - set C++17 flag
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -32,15 +32,13 @@ if("${CMAKE_BUILD_TYPE} " STREQUAL "Debug ")
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -Wno-unknown-pragmas -O0 -ggdb -rdynamic")
 
-    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Intel ")
-        message(FATAL_ERROR "Unsupported compiler: Intel")
+    else()
+        message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "MSVC ")
-        message(FATAL_ERROR "Unsupported compiler: MSVC ")
     endif()
 
 elseif("${CMAKE_BUILD_TYPE} " STREQUAL "Release ")
-    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang")
+    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang ")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-unknown-pragmas -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -O3")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
@@ -49,15 +47,13 @@ elseif("${CMAKE_BUILD_TYPE} " STREQUAL "Release ")
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-unknown-pragmas -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -O3")
 
-    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel ")
-        message(FATAL_ERROR "Unsupported compiler: Intel")
+    else()
+        message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "MSVC ")
-        message(FATAL_ERROR "Unsupported compiler: MSVC")
     endif()
 
 elseif("${CMAKE_BUILD_TYPE} " STREQUAL "RelWithDebInfo ")
-    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang")
+    if ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "Clang ")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=4 -Wno-unknown-pragmas -O3 -ggdb")
 
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "AppleClang ")
@@ -66,11 +62,9 @@ elseif("${CMAKE_BUILD_TYPE} " STREQUAL "RelWithDebInfo ")
     elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "GNU ")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wno-maybe-uninitialized -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=4 -Wswitch-default -Wundef -Werror -Wconversion -Wno-unknown-pragmas -O3 -ggdb -rdynamic")
 
-    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel ")
-        message(FATAL_ERROR "Unsupported compiler: Intel")
+    else()
+        message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-    elseif ("${CMAKE_CXX_COMPILER_ID} " STREQUAL "MSVC ")
-        message(FATAL_ERROR "Unsupported compiler: MSVC")
     endif()
 endif()
 
@@ -85,7 +79,8 @@ endif()
 #------------------------------------------------------------------------------
 # Build products
 
-find_package(ROOT 5.26.00 REQUIRED COMPONENTS MathMore)
+list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
+find_package(ROOT REQUIRED COMPONENTS MathMore)
 include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
 link_libraries(${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
 include(${ROOT_USE_FILE})

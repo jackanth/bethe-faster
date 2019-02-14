@@ -145,7 +145,7 @@ TCanvas *PlotHelper::PlotParticleEnergyMarkers(
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
-TGraph PlotHelper::GetParticledEdxVersusXGraph(const std::shared_ptr<Particle> &spParticle, const bool useResidualRange)
+TGraph PlotHelper::GetParticledEdxVersusXGraph(const std::shared_ptr<Particle> &spParticle, const bool useResidualRange, const double offset)
 {
     const auto &history = spParticle->GetHistory();
 
@@ -157,7 +157,7 @@ TGraph PlotHelper::GetParticledEdxVersusXGraph(const std::shared_ptr<Particle> &
 
     for (const auto &spState : history)
     {
-        positions.push_back(useResidualRange ? spState->GetResidualRange() : maxResidualRange - spState->GetResidualRange());
+        positions.push_back(useResidualRange ? spState->GetResidualRange() + offset : maxResidualRange - spState->GetResidualRange() + offset);
         responses.push_back(-spState->GetdEdx());
     }
 
@@ -462,8 +462,7 @@ void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGra
             pLegend->AddEntry(&graph, graphEntry.LegendText().c_str(), graphEntry.DrawLine() ? "L" : "F");
     }
 
-    pMultiGraph->GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
-    pMultiGraph->GetYaxis()->SetTitle(options.m_yAxisTitle.c_str());
+    pMultiGraph->SetTitle((";" + options.m_xAxisTitle + ";" + options.m_yAxisTitle + ";").c_str());
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -505,8 +504,7 @@ TCanvas *PlotHelper::DrawMultiGraph(const std::vector<std::reference_wrapper<Mul
             legend.AddEntry(&graph, graphEntry.LegendText().c_str(), "f");
     }
 
-    pMultiGraph->GetXaxis()->SetTitle(options.m_xAxisTitle.c_str());
-    pMultiGraph->GetYaxis()->SetTitle(options.m_yAxisTitle.c_str());
+    pMultiGraph->SetTitle((";" + options.m_xAxisTitle + ";" + options.m_yAxisTitle + ";").c_str());
 
     if (options.m_yLogScale)
         pCanvas->SetLogy();
