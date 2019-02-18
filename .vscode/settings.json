@@ -42,14 +42,15 @@
         "iomanip": "cpp"
     },
     "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/CVS": true,
         "**/.DS_Store": true,
-        "/include": true,
-        "/lib": true,
-        "/build": true,
-        "/bin": true
+        "**/.git": true,
+        "**/.hg": true,
+        "**/.svn": true,
+        "**/CVS": true,
+        "bin": true,
+        "build": true,
+        "images": true,
+        "include": true,
+        "lib": true
     }
 }

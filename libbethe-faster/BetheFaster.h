@@ -15,6 +15,7 @@
 #include "PhysicalConstants.h"
 #include "Propagator.h"
 #include "QuickPidAlgorithm.h"
+#include "HitCharge.h"
 
 #include "DetectorHelper.h"
 #include "FilterHelper.h"

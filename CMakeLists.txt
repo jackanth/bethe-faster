@@ -6,6 +6,7 @@ cmake_policy(VERSION 3.5.1)
 
 # - project name
 project(bethe-faster LANGUAGES CXX)
+set(bethe-faster_VERSION 0.1.0)
 
 # - build type
 set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Set build type")
@@ -95,7 +96,7 @@ if (USE_OPENMP)
 endif()
 
 # - build the sources into an object library
-set(BETHE_SRCS libbethe-faster/Particle.cc libbethe-faster/DetectorHelper.cc libbethe-faster/Propagator.cc libbethe-faster/ParticleFilter.cc libbethe-faster/FilterHelper.cc libbethe-faster/PlotHelper.cc libbethe-faster/ParticleHelper.cc libbethe-faster/QuickPidAlgorithm.cc)
+set(BETHE_SRCS libbethe-faster/Particle.cc libbethe-faster/DetectorHelper.cc libbethe-faster/Propagator.cc libbethe-faster/ParticleFilter.cc libbethe-faster/FilterHelper.cc libbethe-faster/PlotHelper.cc libbethe-faster/ParticleHelper.cc libbethe-faster/QuickPidAlgorithm.cc libbethe-faster/QuickPidHelper.cc)
 
 set(BETHE_OBJECTS bethe-obj)
 add_library(${BETHE_OBJECTS} OBJECT ${BETHE_SRCS})
@@ -106,13 +107,15 @@ target_include_directories(${BETHE_OBJECTS} PRIVATE libbethe-faster ${CMAKE_CURR
 set(BETHE_STATIC_LIBRARY_NAME bethe-faster-static)
 add_library(${BETHE_STATIC_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:${BETHE_OBJECTS}>)
 set_target_properties(${BETHE_STATIC_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_include_directories(${BETHE_STATIC_LIBRARY_NAME} PRIVATE libbethe-faster ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${BETHE_STATIC_LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libbethe-faster>  
+$<INSTALL_INTERFACE:include/bethe-faster>)
 
 # - write the shared library
 set(BETHE_SHARED_LIBRARY_NAME bethe-faster-shared)
 add_library(${BETHE_SHARED_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${BETHE_OBJECTS}>)
 set_target_properties(${BETHE_SHARED_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_include_directories(${BETHE_SHARED_LIBRARY_NAME} PRIVATE libbethe-faster ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${BETHE_SHARED_LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libbethe-faster>  
+$<INSTALL_INTERFACE:include/bethe-faster>)
 
 include_directories(libbethe-faster)
 
@@ -129,5 +132,38 @@ install(DIRECTORY DESTINATION include DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRI
 install(DIRECTORY DESTINATION lib DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # - libraries
-install(TARGETS ${BETHE_STATIC_LIBRARY_NAME} ${BETHE_SHARED_LIBRARY_NAME} DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+install(TARGETS ${BETHE_STATIC_LIBRARY_NAME} ${BETHE_SHARED_LIBRARY_NAME} EXPORT bethe-faster-targets LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin INCLUDES DESTINATION include)
 install(DIRECTORY libbethe-faster/ DESTINATION include/bethe-faster FILES_MATCHING PATTERN "*.h" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+# - package config
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/bethe-faster/bethe-faster-config-version.cmake"
+  VERSION ${bethe-faster_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT bethe-faster-targets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/bethe-faster/bethe-faster-targets.cmake"
+  NAMESPACE bethe-faster::
+
+)
+configure_file(cmake/bethe-faster-config.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/bethe-faster/bethe-faster-config.cmake"
+  COPYONLY
+)
+
+set(ConfigPackageLocation lib/cmake/bethe-faster)
+install(EXPORT bethe-faster-targets
+  FILE bethe-faster-targets.cmake
+  NAMESPACE bethe-faster::
+  DESTINATION ${ConfigPackageLocation}
+)
+
+install(
+  FILES
+    cmake/bethe-faster-config.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/bethe-faster/bethe-faster-config-version.cmake"
+  DESTINATION ${ConfigPackageLocation}
+  COMPONENT Devel
+)

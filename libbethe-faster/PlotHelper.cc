@@ -8,6 +8,8 @@
 
 #include "PlotHelper.h"
 
+#include "QuickPidHelper.h"
+
 #include "TAxis.h"
 #include "TROOT.h"
 #include "TSystem.h"
@@ -428,18 +430,125 @@ TCanvas *PlotHelper::PlotParticleLikelihoodHistory(
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
-void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options, TMultiGraph *&pMultiGraph, TLegend *&pLegend)
+TGraph PlotHelper::GetHitChargeGraph(const std::vector<HitCharge> &hitChargeVector, const bool useResidualRange)
+{
+    if (hitChargeVector.empty())
+        throw std::runtime_error{"Cannot plot empty hit charge distribution"};
+
+    std::vector<double> coordinateVector, dEdxVector;
+
+    double maxCoordinate = 0.;
+
+    if (useResidualRange)
+    {
+        for (const auto &hitCharge : hitChargeVector)
+        {
+            if (hitCharge.Coordinate() > maxCoordinate)
+                maxCoordinate = hitCharge.Coordinate();
+        }
+    }
+
+    for (const auto &hitCharge : hitChargeVector)
+    {
+        coordinateVector.push_back(useResidualRange ? maxCoordinate - hitCharge.Coordinate() : hitCharge.Coordinate());
+        dEdxVector.push_back(hitCharge.EnergyLossRate());
+    }
+
+    return TGraph{static_cast<Int_t>(coordinateVector.size()), coordinateVector.data(), dEdxVector.data()};
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+TCanvas *PlotHelper::PlotHitChargeGraph(
+    const std::vector<HitCharge> &hitChargeVector, const bool useResidualRange, const unsigned int colour, const std::int16_t markerStyle)
+{
+    const auto     canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
+    TCanvas *const pCanvas    = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
+    TGraph         graph      = PlotHelper::GetHitChargeGraph(hitChargeVector, useResidualRange);
+
+    // Formatting
+    graph.GetYaxis()->SetTitle("\\mathrm{d}E/\\mathrm{d}x \\text{ (ADC/cm)}");
+    graph.GetXaxis()->SetTitle(useResidualRange ? "R \\text{ (cm)}" : "x \\text{ (cm)}");
+    graph.SetMarkerColor(PlotHelper::GetSchemeColour(colour));
+    graph.SetMarkerStyle(markerStyle);
+
+    graph.DrawClone("AP");
+    return pCanvas;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+TGraph PlotHelper::GetBraggGradientGraph(const std::vector<HitCharge> &hitChargeVector)
+{
+    if (hitChargeVector.empty())
+        throw std::runtime_error{"Cannot plot empty hit charge distribution"};
+
+    double maxCoordinate = 0.;
+
+    for (const auto &hitCharge : hitChargeVector)
+    {
+        if (hitCharge.Coordinate() > maxCoordinate)
+            maxCoordinate = hitCharge.Coordinate();
+    }
+
+    std::vector<double> coordinateVector, dEdxVector;
+
+    for (const auto &hitCharge : hitChargeVector)
+    {
+        const double xDenominator = std::sqrt(maxCoordinate - hitCharge.Coordinate());
+
+        if (xDenominator < std::numeric_limits<double>::epsilon())
+            continue;
+
+        coordinateVector.push_back(1. / xDenominator);
+        dEdxVector.push_back(hitCharge.EnergyLossRate());
+    }
+
+    return TGraph{static_cast<Int_t>(coordinateVector.size()), coordinateVector.data(), dEdxVector.data()};
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+TCanvas *PlotHelper::PlotBraggGradientGraph(const std::vector<HitCharge> &hitChargeVector, const unsigned int colour, const std::int16_t markerStyle)
+{
+    const auto     canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
+    TCanvas *const pCanvas    = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
+    TGraph         graph      = PlotHelper::GetBraggGradientGraph(hitChargeVector);
+
+    // Formatting
+    graph.GetYaxis()->SetTitle("\\mathrm{d}E/\\mathrm{d}x \\text{ (MeV/cm)}");
+    graph.GetXaxis()->SetTitle("1 / \\sqrt{R - x}  \\text{ (cm}^{-0.5}\\text{)}");
+    graph.SetMarkerColor(PlotHelper::GetSchemeColour(colour));
+    graph.SetMarkerStyle(markerStyle);
+    graph.SetMinimum(0.);
+
+    graph.DrawClone("AP");
+
+    const auto [slope, intercept] = QuickPidHelper::CalculateBraggGradient(hitChargeVector);
+
+    TF1 func("f1", "[0] + [1] * x", 0., graph.GetXaxis()->GetXmax());
+    func.SetLineColorAlpha(PlotHelper::GetSchemeColour(colour), 0.35f);
+    func.SetParameter(0, intercept);
+    func.SetParameter(1, slope);
+    func.DrawClone("same");
+    return pCanvas;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options,
+    TMultiGraph *&pMultiGraph, TLegend *&pLegend)
 {
     // Create the multigraph and the legend
     pMultiGraph = new TMultiGraph{};
-    pLegend = new TLegend{options.m_legendX1, options.m_legendY1, options.m_legendX2, options.m_legendY2};
+    pLegend     = new TLegend{options.m_legendX1, options.m_legendY1, options.m_legendX2, options.m_legendY2};
 
     pLegend->SetBorderSize(1);
 
     for (auto &wGraphEntry : graphEntries)
     {
         auto &graphEntry = wGraphEntry.get();
-        
+
         const auto colour = bf::PlotHelper::GetSchemeColour(graphEntry.Colour());
         auto &     graph  = graphEntry.Graph();
         graph.SetFillColor(colour);
@@ -470,12 +579,12 @@ void PlotHelper::GetMultiGraph(const std::vector<std::reference_wrapper<MultiGra
 TCanvas *PlotHelper::DrawMultiGraph(const std::vector<std::reference_wrapper<MultiGraphEntry>> &graphEntries, const PlotOptions &options)
 {
     // Create the canvas
-    const auto canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
-    TCanvas *const pCanvas = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
-    
+    const auto     canvasName = "bfCanvas" + std::to_string(g_canvasCount++);
+    TCanvas *const pCanvas    = new TCanvas{canvasName.c_str(), canvasName.c_str(), 800, 600};
+
     // Create the multigraph and the legend
     TMultiGraph *pMultiGraph = new TMultiGraph{};
-    TLegend     legend{options.m_legendX1, options.m_legendY1, options.m_legendX2, options.m_legendY2};
+    TLegend      legend{options.m_legendX1, options.m_legendY1, options.m_legendX2, options.m_legendY2};
     legend.SetBorderSize(1);
 
     for (const auto &wGraphEntry : graphEntries)
@@ -544,4 +653,22 @@ void PlotHelper::Pause()
     fcntl(1, F_SETFL, flag);
 }
 
+//-----------------------------------------------------------------------------------------------------------------------------------------
+
+std::int16_t PlotHelper::GetSchemeColourLight(const unsigned int number)
+{
+    switch (number % 8U) {
+        case 0U: return static_cast<std::int16_t>(TColor::GetColor("#66BDA3"));
+        case 1U: return static_cast<std::int16_t>(TColor::GetColor("#EAAB7B"));
+        case 2U: return static_cast<std::int16_t>(TColor::GetColor("#B7B4D6"));
+        case 3U: return static_cast<std::int16_t>(TColor::GetColor("#F18EC1"));
+        case 4U: return static_cast<std::int16_t>(TColor::GetColor("#AED089"));
+        case 5U: return static_cast<std::int16_t>(TColor::GetColor("#EFC95E"));
+        case 6U: return static_cast<std::int16_t>(TColor::GetColor("#E6D9C1"));
+        case 7U: return static_cast<std::int16_t>(TColor::GetColor("#D5D5D5"));
+        default: break;
+    }
+
+    return static_cast<std::int16_t>(TColor::GetColor("#000000"));
+}
 } // namespace bf
