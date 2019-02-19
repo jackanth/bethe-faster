@@ -13,6 +13,8 @@
 #include "HitCharge.h"
 #include "QuickPidHelper.h"
 
+#include "TGraph.h"
+
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -63,30 +65,25 @@ public:
      *
      *  @return the Bragg gradient and intercept
      */
-    static std::tuple<double, double> CalculateBraggGradient(std::vector<HitCharge> hitChargeVector);
+    static bool CalculateBraggGradient(std::vector<HitCharge> hitChargeVector, double &gradient, double &intercept);
+
+    bool CalculateSecondOrderBraggGradient(std::vector<HitCharge> hitChargeVector, double &gradient, double &intercept) const;
+
+    TGraph GetSecondOrderBraggGradientGraph(const std::vector<HitCharge> &hitChargeVector) const;
 
 private:
-    Detector m_detector;       ///< The detector parameters
-    double   m_xiPrimePartial; ///< The value of partial xi prime
-    double   m_chiPartial;     ///< The value of partial chi
-
-    /**
-     *  @brief  Get the xi prime value
-     *
-     *  @param  deltaX the effective thickness
-     *
-     *  @return the value of xi prime
-     */
-    double XiPrime(const double deltaX) const;
+    Detector m_detector;   ///< The detector parameters
+    double   m_xiPrime;    ///< The value of xi prime
+    double   m_chiPartial; ///< The value of partial chi
 
     /**
      *  @brief  Get the chi value
      *
-     *  @param  xiPrime the value of xi prime
+     *  @param  deltaX the value of deltaX
      *
      *  @return the value of chi
      */
-    double Chi(const double xiPrime) const;
+    double Chi(const double deltaX) const;
 
     /**
      *  @brief  Calculate the scaled kinetic energy function for Newton's method
@@ -110,14 +107,16 @@ private:
      *  @return the value of the derivative
      */
     double NewtonMethodFuncDeriv(const double scaledKineticEnergy, const double prefactor, const double chi) const;
+
+    double CalculateTPrime(const double dEdx, const double deltaX) const;
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::tuple<double, double> QuickPidAlgorithm::CalculateBraggGradient(std::vector<HitCharge> hitChargeVector)
+inline bool QuickPidAlgorithm::CalculateBraggGradient(std::vector<HitCharge> hitChargeVector, double &gradient, double &intercept)
 {
-    return QuickPidHelper::CalculateBraggGradient(hitChargeVector);
+    return QuickPidHelper::CalculateBraggGradient(hitChargeVector, gradient, intercept);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -125,28 +124,19 @@ inline std::tuple<double, double> QuickPidAlgorithm::CalculateBraggGradient(std:
 inline double QuickPidAlgorithm::EstimatedEdx(const double residualRange, const double mass, const double deltaX) const
 {
     const double scaledKineticEnergy = this->CalculateScaledKineticEnergy(residualRange, mass, deltaX);
-
-    const double xiPrime = this->XiPrime(deltaX);
-    const double chi     = this->Chi(xiPrime);
+    const double chi     = this->Chi(deltaX);
 
     const double gamma = 1. + scaledKineticEnergy;
     const double beta2 = 1. - 1. / (gamma * gamma);
 
-    return xiPrime / (beta2 * deltaX) * (chi + 2. * std::log(gamma) - beta2);
+    return m_xiPrime / beta2 * (chi + 2. * std::log(gamma) - beta2);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline double QuickPidAlgorithm::XiPrime(const double deltaX) const
+inline double QuickPidAlgorithm::Chi(const double deltaX) const
 {
-    return m_xiPrimePartial * deltaX;
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-inline double QuickPidAlgorithm::Chi(const double xiPrime) const
-{
-    return m_chiPartial + std::log(xiPrime);
+    return m_chiPartial + std::log(deltaX);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

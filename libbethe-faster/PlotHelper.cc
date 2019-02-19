@@ -524,7 +524,11 @@ TCanvas *PlotHelper::PlotBraggGradientGraph(const std::vector<HitCharge> &hitCha
 
     graph.DrawClone("AP");
 
-    const auto [slope, intercept] = QuickPidHelper::CalculateBraggGradient(hitChargeVector);
+    double slope = 0.;
+    double intercept = 0.;
+    
+    if (!QuickPidHelper::CalculateBraggGradient(hitChargeVector, slope, intercept))
+        return pCanvas;
 
     TF1 func("f1", "[0] + [1] * x", 0., graph.GetXaxis()->GetXmax());
     func.SetLineColorAlpha(PlotHelper::GetSchemeColour(colour), 0.35f);

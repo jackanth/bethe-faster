@@ -34,7 +34,7 @@ public:
      *
      *  @return the gradient and intercept
      */
-    static std::tuple<double, double> CalculateBraggGradient(const std::vector<HitCharge> &hitChargeVector);
+    static bool CalculateBraggGradient(const std::vector<HitCharge> &hitChargeVector, double &gradient, double &intercept);
 
     /**
      *  @brief  Calculate the median of some numbers

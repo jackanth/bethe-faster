@@ -15,10 +15,10 @@
 namespace bf
 {
 
-std::tuple<double, double> QuickPidHelper::CalculateBraggGradient(const std::vector<HitCharge> &hitChargeVector) 
+bool QuickPidHelper::CalculateBraggGradient(const std::vector<HitCharge> &hitChargeVector, double &gradient, double &intercept) 
 {
     if (hitChargeVector.empty())
-        throw std::runtime_error{"No data points were provided"};
+        return false;
         
     // Calculate the maximum coordinate
     double maxCoordinate = 0.;
@@ -64,11 +64,11 @@ std::tuple<double, double> QuickPidHelper::CalculateBraggGradient(const std::vec
             if (std::fabs(xj - xi) < std::numeric_limits<double>::epsilon())
                 continue;
 
-            const double intercept = (xj * yi - xi * yj) / (xj - xi);
-            const double slope     = (yj - yi) / (xj - xi);
+            const double pointIntercept = (xj * yi - xi * yj) / (xj - xi);
+            const double pointSlope     = (yj - yi) / (xj - xi);
 
-            slopeVector.push_back(slope);
-            interceptVector.push_back(intercept);
+            slopeVector.push_back(pointSlope);
+            interceptVector.push_back(pointIntercept);
         }
 
         if (slopeVector.empty() || interceptVector.empty())
@@ -79,12 +79,12 @@ std::tuple<double, double> QuickPidHelper::CalculateBraggGradient(const std::vec
     }
 
     if (slopeMedianVector.empty() || interceptMedianVector.empty())
-        throw std::runtime_error{"Not enough good hits to calculate Bragg gradient"};
+        return false;
 
-    const double slope     = QuickPidHelper::CalculateMedian(slopeMedianVector);
-    const double intercept = QuickPidHelper::CalculateMedian(interceptMedianVector);
+    gradient  = QuickPidHelper::CalculateMedian(slopeMedianVector);
+    intercept = QuickPidHelper::CalculateMedian(interceptMedianVector);
 
-    return {slope, intercept};
+    return true;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
