@@ -227,8 +227,9 @@ double QuickPidAlgorithm::CalculateTPrime(const double dEdx, const double deltaX
     for (double scaledKineticEnergy : initialEstimates) {
         double func = newtonFunc(scaledKineticEnergy);
         bool failed = false;
+        std::uint32_t loopCounter = 1U;
 
-        while (std::abs(func) > 0.000001)
+        while (std::abs(func) > 0.001)
         {
             try
             {
@@ -238,6 +239,11 @@ double QuickPidAlgorithm::CalculateTPrime(const double dEdx, const double deltaX
             }
             catch (...)
             {
+                failed = true;
+                break;
+            }
+
+            if (loopCounter++ >= 10'000) {
                 failed = true;
                 break;
             }
