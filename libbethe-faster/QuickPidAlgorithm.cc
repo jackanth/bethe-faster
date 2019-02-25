@@ -167,20 +167,35 @@ double QuickPidAlgorithm::CalculateScaledKineticEnergy(const double residualRang
     const double prefactor = mass / (2. * m_xiPrime);
 
     // Newton's method
-    double scaledKineticEnergy = 0.2; // initial estimate
-    double func                = this->NewtonMethodFunc(scaledKineticEnergy, residualRange, prefactor, chi);
+    std::vector<double> initialEstimates = {0.2, 0.05, 0.01, 0.5, 0.75, 1.0};
 
-    while (std::abs(func) > 0.000001)
+    for (double scaledKineticEnergy : initialEstimates)
     {
-        double funcDeriv = this->NewtonMethodFuncDeriv(scaledKineticEnergy, prefactor, chi);
-        scaledKineticEnergy -= func / funcDeriv;
-        func = this->NewtonMethodFunc(scaledKineticEnergy, residualRange, prefactor, chi);
+        bool failed = false;
+        std::uint32_t loopCounter = 1U;
+        double func = this->NewtonMethodFunc(scaledKineticEnergy, residualRange, prefactor, chi);
+
+        while (std::abs(func) > 0.000001)
+        {
+            double funcDeriv = this->NewtonMethodFuncDeriv(scaledKineticEnergy, prefactor, chi);
+            scaledKineticEnergy -= func / funcDeriv;
+            func = this->NewtonMethodFunc(scaledKineticEnergy, residualRange, prefactor, chi);
+
+            if (loopCounter++ >= 10'000) 
+            {
+                failed = true;
+                break;
+            }
+        }
+
+        if (failed)
+            continue;
+
+        if (scaledKineticEnergy > -std::numeric_limits<double>::epsilon())
+            return scaledKineticEnergy;
     }
 
-    if (scaledKineticEnergy < -std::numeric_limits<double>::epsilon())
-        throw std::runtime_error{"Newton's method failed to find the positive root"};
-
-    return scaledKineticEnergy;
+    throw std::runtime_error{"Newton's method failed to find the positive root"};
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -243,7 +258,8 @@ double QuickPidAlgorithm::CalculateTPrime(const double dEdx, const double deltaX
                 break;
             }
 
-            if (loopCounter++ >= 10'000) {
+            if (loopCounter++ >= 10'000) 
+            {
                 failed = true;
                 break;
             }

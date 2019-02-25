@@ -50,55 +50,55 @@ public:
     ParticleHelper() = delete;
 
     /**
-     *  @brief  Get a particle to propagate backwards
+     *  @brief  Get a particle
      *
      *  @param  mass the particle mass
-     *  @param  finalKineticEnergy the final kinetic energy
-     *  @param  finalResidualRange the final residual range
+     *  @param  kineticEnergy the kinetic energy
+     *  @param  residualRange the residual range
      *
      *  @return shared pointer to the particle
      */
-    static std::shared_ptr<Particle> GetParticle(const double mass, const double finalKineticEnergy, const double finalResidualRange = 0.);
+    static std::shared_ptr<Particle> GetParticle(const double mass, const double kineticEnergy, const double residualRange = 0.);
 
     /**
-     *  @brief  Get a muon to propagate backwards
+     *  @brief  Get a muon
      *
-     *  @param  finalKineticEnergy the final kinetic energy
-     *  @param  finalResidualRange the final residual range
+     *  @param  kineticEnergy the kinetic energy
+     *  @param  residualRange the residual range
      *
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetMuon(const double finalKineticEnergy = 0., const double finalResidualRange = 0.);
+    static std::shared_ptr<Particle> GetMuon(const double kineticEnergy = 0., const double residualRange = 0.);
 
     /**
-     *  @brief  Get a proton to propagate backwards
+     *  @brief  Get a proton
      *
-     *  @param  finalKineticEnergy the final kinetic energy
-     *  @param  finalResidualRange the final residual range
+     *  @param  kineticEnergy the kinetic energy
+     *  @param  residualRange the residual range
      *
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetProton(const double finalKineticEnergy = 0., const double finalResidualRange = 0.);
+    static std::shared_ptr<Particle> GetProton(const double kineticEnergy = 0., const double residualRange = 0.);
 
     /**
-     *  @brief  Get a charged pion to propagate backwards
+     *  @brief  Get a charged pion
      *
-     *  @param  finalKineticEnergy the final kinetic energy
-     *  @param  finalResidualRange the final residual range
+     *  @param  kineticEnergy the kinetic energy
+     *  @param  residualRange the residual range
      *
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetChargedPion(const double finalKineticEnergy = 0., const double finalResidualRange = 0.);
+    static std::shared_ptr<Particle> GetChargedPion(const double kineticEnergy = 0., const double residualRange = 0.);
 
     /**
-     *  @brief  Get a charged kaon to propagate backwards
+     *  @brief  Get a charged kaon
      *
-     *  @param  finalKineticEnergy the final kinetic energy
-     *  @param  finalResidualRange the final residual range
+     *  @param  kineticEnergy the kinetic energy
+     *  @param  residualRange the residual range
      *
      *  @return shared pointer to the muon
      */
-    static std::shared_ptr<Particle> GetChargedKaon(const double finalKineticEnergy = 0., const double finalResidualRange = 0.);
+    static std::shared_ptr<Particle> GetChargedKaon(const double kineticEnergy = 0., const double residualRange = 0.);
 
     /**
      *  @brief  Calculate gamma for a particle
@@ -151,31 +151,30 @@ public:
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetMuon(const double finalKineticEnergy, const double finalResidualRange)
+inline std::shared_ptr<Particle> ParticleHelper::GetMuon(const double kineticEnergy, const double residualRange)
 {
-    return ParticleHelper::GetParticle(PhysicalConstants::m_muonMass, finalKineticEnergy, finalResidualRange);
+    return ParticleHelper::GetParticle(PhysicalConstants::m_muonMass, kineticEnergy, residualRange);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetProton(const double finalKineticEnergy, const double finalResidualRange)
+inline std::shared_ptr<Particle> ParticleHelper::GetProton(const double kineticEnergy, const double residualRange)
 {
-    return ParticleHelper::GetParticle(PhysicalConstants::m_protonMass, finalKineticEnergy, finalResidualRange);
+    return ParticleHelper::GetParticle(PhysicalConstants::m_protonMass, kineticEnergy, residualRange);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetChargedPion(const double finalKineticEnergy, const double finalResidualRange)
+inline std::shared_ptr<Particle> ParticleHelper::GetChargedPion(const double kineticEnergy, const double residualRange)
 {
-    return ParticleHelper::GetParticle(PhysicalConstants::m_chargedPionMass, finalKineticEnergy, finalResidualRange);
+    return ParticleHelper::GetParticle(PhysicalConstants::m_chargedPionMass, kineticEnergy, residualRange);
 }
-
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetChargedKaon(const double finalKineticEnergy, const double finalResidualRange)
+inline std::shared_ptr<Particle> ParticleHelper::GetChargedKaon(const double kineticEnergy, const double residualRange)
 {
-    return ParticleHelper::GetParticle(PhysicalConstants::m_chargedKaonMass, finalKineticEnergy, finalResidualRange);
+    return ParticleHelper::GetParticle(PhysicalConstants::m_chargedKaonMass, kineticEnergy, residualRange);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -202,9 +201,9 @@ inline double ParticleHelper::GetParticleBeta(const double mass, const double en
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::shared_ptr<Particle> ParticleHelper::GetParticle(const double mass, const double finalKineticEnergy, const double finalResidualRange)
+inline std::shared_ptr<Particle> ParticleHelper::GetParticle(const double mass, const double kineticEnergy, const double residualRange)
 {
-    return std::shared_ptr<Particle>{new Particle{mass, finalKineticEnergy, finalResidualRange}};
+    return std::shared_ptr<Particle>{new Particle{mass, kineticEnergy, residualRange}};
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

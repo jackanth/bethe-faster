@@ -89,7 +89,7 @@ double Propagator::PropagateBackwards(const std::shared_ptr<Particle> &spParticl
                 throw std::runtime_error{"Unknown propagation mode"};
         }
 
-        if (deltaE / stepSize < -20.)
+        if (deltaE / stepSize < -40.)
         {
             spParticle->SetKineticEnergy(spParticle->KineticEnergy() + 1.0);
             continue;
@@ -176,7 +176,7 @@ double Propagator::SampleDeltaE(const double meanEnergyLoss, const double kappa,
     }
 
     if (kappa > 0.01) // Vavilov
-        return meanEnergyLoss + xi * (this->SampleFromVavilovDistribution(kappa, beta2) + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
+        return meanEnergyLoss + xi * (this->SampleFromVavilovDistribution(kappa, beta2) - 1. + beta2 + std::log(kappa) + PhysicalConstants::m_eulerConstant);
 
     // kappa < 0.01; Landau approximation
     const double logKappa  = std::log(kappa);
@@ -196,17 +196,7 @@ double Propagator::SampleDeltaE(const double meanEnergyLoss, const double kappa,
 
 double Propagator::GetDeltaEMode(const double meanEnergyLoss, const double kappa, const double beta2, const double xi) const
 {
-    //return meanEnergyLoss + xi * (this->GetVavilovMode(kappa, beta2) + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
     return meanEnergyLoss + xi * (beta2 + std::log(kappa) + PhysicalConstants::m_vavilovJ);
-
-    if (kappa > 10.) // Gaussian approximation
-        return meanEnergyLoss;
-
-    if (kappa > 0.01) // Vavilov
-        return meanEnergyLoss + xi * (this->GetVavilovMode(kappa, beta2) + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
-
-    // kappa < 0.01; Landau approximation
-    return meanEnergyLoss + xi * (PhysicalConstants::m_landauMode + 1. + beta2 + std::log(kappa) - PhysicalConstants::m_eulerConstant);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
